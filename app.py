@@ -11,7 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # --- CONFIGURAÇÃO INICIAL ---
-st.set_page_config(page_title="Loop BIDs", layout="wide")
+st.set_page_config(page_title="BIDs", layout="wide")
 load_dotenv()
 
 # --- CONEXÃO SUPABASE ---
@@ -123,7 +123,7 @@ st.markdown("""
     /* Efeito ao passar o mouse */
     section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover {
         background-color: #F3F4F6;
-        color: #FF3B3B; /* Vermelho Loop */
+        color: #FF3B3B; /* Vermelho */
     }
     
     /* Item Selecionado */
@@ -204,12 +204,12 @@ if not st.session_state.logged_in:
                 if st.button("Voltar", use_container_width=True): st.session_state.login_view = 'provider'; st.rerun()
 
         # --- AVISO DE COPYRIGHT REINSERIDO ---
-        st.markdown("<div style='text-align: center; color: #9CA3AF; font-size: 0.75rem; margin-top: 40px;'>© 2026 Loop Brasil - Time Transportes <br><br><br><br>Precisa de ajuda?<br>vinicius.lima@loopbrasil.com</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; color: #9CA3AF; font-size: 0.75rem; margin-top: 40px;'>© 2026 - VCarmoLima<br><br><br><br>Precisa de ajuda?<br>viniciuscarmo.contato@gmail.com</div>", unsafe_allow_html=True)
 
     st.stop()
 
 # --- HEADER SUPERIOR (MANTIDO) ---
-st.markdown("""<div class="top-bar"><div class="top-title">BID Logístico | Loop</div></div>""", unsafe_allow_html=True)
+st.markdown("""<div class="top-bar"><div class="top-title">BID Logístico</div></div>""", unsafe_allow_html=True)
 
 # --- BARRA LATERAL (SIDEBAR ATUALIZADA) ---
 with st.sidebar:
@@ -581,6 +581,6 @@ else:
             Ao final do tempo, o administrador analisa um Score que combina 70% Preço e 30% Prazo para decidir o vencedor final.
             """)
 
-    # AUTO REFRESH MANUAL (Loop no final)
+    # AUTO REFRESH MANUAL
     sleep(10)
     st.rerun()
