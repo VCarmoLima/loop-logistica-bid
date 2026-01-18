@@ -3,16 +3,7 @@ __pycache__/
 
 .env
 
-.idea/
-idea/
-
 *.pyc
-
-*json
-credentials.json
-
-.image/
-image/
 
 .Auditoria_BIDs/
 Auditoria_BIDs/
