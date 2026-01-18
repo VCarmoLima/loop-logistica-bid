@@ -20,11 +20,10 @@ Sistema web desenvolvido em Python para gestão de leilões de fretes (BIDs), pe
     - Envio automático de e-mails de notificação e relatórios.
 
 ## Tecnologias Utilizadas
-- **Frontend/Backend:** [Streamlit](https://streamlit.io/) (Python)
+- **Frontend/Backend:** [Streamlit](https://streamlit.io/) / Python
 - **Banco de Dados:** Supabase (PostgreSQL)
 - **Armazenamento:** Supabase Storage (Imagens)
 - **Relatórios:** FPDF (Geração de PDFs)
-- **Automação:** Script Python (`worker.py`) rodando em loop.
 
 ## Como Rodar o Projeto
 

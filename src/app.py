@@ -9,6 +9,7 @@ from utils_pdf import gerar_pdf_auditoria_completo
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import threading
 
 # --- CONFIGURAÇÃO INICIAL ---
 st.set_page_config(page_title="BIDs", layout="wide")
@@ -29,6 +30,43 @@ def init_connection():
     return create_client(url, key)
 
 supabase = init_connection()
+
+@st.cache_resource
+def iniciar_robo_monitoramento():
+    def job():
+        print("[SaaS] Worker Iniciado em Background...")
+        while True:
+            try:
+                # Usa as credenciais globais para criar uma conexão isolada para o robô
+                # Isso evita conflito com a navegação do usuário
+                client_worker = create_client(url, key)
+
+                # Lógica original do worker.py
+                resp = client_worker.table("bids").select("*").eq("status", "ABERTO").execute()
+                agora_utc = datetime.now(timezone.utc)
+
+                for bid in resp.data:
+                    prazo_str = bid.get('prazo_limite')
+                    if prazo_str:
+                        # Tratamento de data e fuso
+                        clean_str = prazo_str.replace('Z', '+00:00')
+                        prazo_dt = datetime.fromisoformat(clean_str)
+
+                        if agora_utc > prazo_dt:
+                            print(f"[Auto] Encerrando: {bid['titulo']}")
+                            client_worker.table("bids").update({"status": "EM_ANALISE"}).eq("id", bid['id']).execute()
+
+                sleep(10) # Verifica a cada 10 segundos
+            except Exception as e:
+                print(f"Erro no Worker: {e}")
+                sleep(10)
+
+    # Inicia a thread em modo 'daemon' (não trava o site)
+    t = threading.Thread(target=job, daemon=True)
+    t.start()
+
+# Liga o robô
+iniciar_robo_monitoramento()
 
 # --- SESSÃO ---
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
@@ -580,7 +618,3 @@ else:
             **Avaliação Final (Score):**
             Ao final do tempo, o administrador analisa um Score que combina 70% Preço e 30% Prazo para decidir o vencedor final.
             """)
-
-    # AUTO REFRESH MANUAL
-    sleep(10)
-    st.rerun()
