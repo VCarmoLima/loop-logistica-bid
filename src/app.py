@@ -334,12 +334,57 @@ if st.session_state.user_type == 'admin':
                 placa = col_placa.text_input("Placa do Veículo")
                 titulo = col_modelo.text_input("Modelo / Versão", placeholder="Ex: SCANIA R450 A 6X2")
 
+                # --- DADOS DOS PÁTIOS (CONSTANTE) ---
+                PATIOS = {
+                    "Jundiaí – SP": "Avenida Caminho de Goiás, 531 – Jundiaí/SP",
+                    "Mogi das Cruzes – SP": "Avenida Almerinda Villela Ferreira, 1 – Mogi das Cruzes/SP",
+                    "São José dos Pinhais – PR": "Rua Doutor Murici, 3560 – São José dos Pinhais/PR",
+                    "São José – SC": "Rua Mihail Dimitri Alves, 50 – São José/SC",
+                    "São Paulo – SP": "Rua Alexandre Aliperti, 351 – São Paulo/SP",
+                    "Uberlândia – MG": "BR-365, Km 10 – Uberlândia/MG",
+                    "Gravataí – RS": "Estrada do Gravata, 1200 – Gravataí/RS",
+                    "Penha – RJ": "Rua do Alho, 1421 – Rio de Janeiro/RJ",
+                    "Betim – MG": "Rua Engenheiro Gerhard Ett, 1115 – Betim/MG",
+                    "São José dos Pinhais – PR (Costeira)": "Rua Doutor Murici, 3560 – São José dos Pinhais/PR",
+                    "Imigrantes – SP": "Rua Alexandre Aliperti, 351 – São Paulo/SP"
+                }
+
                 st.markdown("#### Rota Logística")
-                c1, c2 = st.columns(2)
-                origem = c1.text_input("Cidade Origem")
-                end_ret = c1.text_area("Endereço Coleta", height=80)
-                destino = c2.text_input("Cidade Destino")
-                end_ent = c2.text_area("Endereço Entrega", height=80)
+
+                # Lógica: Se for "Pátio a Pátio", força o checkbox a ser True
+                is_patio_mode = (tipo_transporte == "Pátio a Pátio")
+
+                # --- COLUNA DA ESQUERDA: ORIGEM ---
+                c_origem, c_destino = st.columns(2)
+
+                with c_origem:
+                    st.markdown("**Origem (Coleta)**")
+                    # Checkbox para definir se é pátio
+                    # Se for Pátio a Pátio, já vem marcado por padrão
+                    usa_patio_origem = st.checkbox("É um Pátio Loop?", value=is_patio_mode, key="chk_origem")
+
+                    if usa_patio_origem:
+                        sel_patio_o = st.selectbox("Selecione o Pátio", list(PATIOS.keys()), key="sel_origem")
+                        origem = sel_patio_o
+                        end_ret = PATIOS[sel_patio_o]
+                        st.info(f"{end_ret}") # Mostra o endereço pro admin conferir
+                    else:
+                        origem = st.text_input("Cidade Origem")
+                        end_ret = st.text_area("Endereço Coleta", height=80)
+
+                # --- COLUNA DA DIREITA: DESTINO ---
+                with c_destino:
+                    st.markdown("**Destino (Entrega)**")
+                    usa_patio_destino = st.checkbox("É um Pátio Loop?", value=is_patio_mode, key="chk_destino")
+
+                    if usa_patio_destino:
+                        sel_patio_d = st.selectbox("Selecione o Pátio", list(PATIOS.keys()), key="sel_destino")
+                        destino = sel_patio_d
+                        end_ent = PATIOS[sel_patio_d]
+                        st.info(f"{end_ent}")
+                    else:
+                        destino = st.text_input("Cidade Destino")
+                        end_ent = st.text_area("Endereço Entrega", height=80)
 
                 st.markdown("#### Encerramento")
                 c3, c4 = st.columns(2)
