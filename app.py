@@ -158,8 +158,27 @@ if not st.session_state.logged_in:
         with st.container(border=True):
             col_l1, col_logo, col_l2 = st.columns([1, 2, 1])
             with col_logo:
-                if os.path.exists("image/logo.webp"): st.image("image/logo.webp", use_container_width=True)
-                else: st.markdown("<h2 style='text-align: center; color: #FF3B3B;'>LOOP</h2>", unsafe_allow_html=True)
+                # -----------------------------------------------------------
+                # SUBSTITUIÇÃO: Lógica do Logo Genérico
+                # -----------------------------------------------------------
+                if os.path.exists("image/logo.webp"):
+                    st.image("image/logo.webp", use_container_width=True)
+                else:
+                    # Renderiza um quadrado cinza escrito LOGO se não tiver imagem
+                    st.markdown("""
+                        <div style="
+                            background-color: #E5E7EB; 
+                            width: 100%; 
+                            height: 100px; 
+                            display: flex; 
+                            align-items: center; 
+                            justify-content: center; 
+                            border-radius: 8px; 
+                            margin-bottom: 20px;
+                            border: 2px dashed #9CA3AF;">
+                            <span style="color: #6B7280; font-weight: 800; font-size: 1.5rem; letter-spacing: 2px;">LOGO</span>
+                        </div>
+                    """, unsafe_allow_html=True)
 
             if st.session_state.login_view == 'provider':
                 st.markdown("<h3 style='text-align: center;'>Acesso Parceiro</h3>", unsafe_allow_html=True)
@@ -195,10 +214,27 @@ st.markdown("""<div class="top-bar"><div class="top-title">BID Logístico | Loop
 # --- BARRA LATERAL (SIDEBAR ATUALIZADA) ---
 with st.sidebar:
     # 1. LOGO
+    # -----------------------------------------------------------
+    # SUBSTITUIÇÃO: Lógica do Logo Genérico
+    # -----------------------------------------------------------
     if os.path.exists("image/logo.webp"):
         st.image("image/logo.webp", use_container_width=True)
     else:
-        st.markdown("### Loop Leilões")
+        # Renderiza um quadrado cinza escrito LOGO se não tiver imagem
+        st.markdown("""
+            <div style="
+                background-color: #E5E7EB; 
+                width: 100%; 
+                height: 100px; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                border-radius: 8px; 
+                margin-bottom: 20px;
+                border: 2px dashed #9CA3AF;">
+                <span style="color: #6B7280; font-weight: 800; font-size: 1.5rem; letter-spacing: 2px;">LOGO</span>
+            </div>
+        """, unsafe_allow_html=True)
 
     # 2. BOAS-VINDAS (PERSONALIZADO: PRETO, NEGRITO, MAIOR)
     st.markdown(f"""
