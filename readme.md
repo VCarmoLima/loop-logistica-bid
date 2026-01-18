@@ -99,4 +99,6 @@ Para visualizar as funcionalidades planejadas e o progresso do desenvolvimento, 
 Este repositório contém uma versão demonstrativa. Logos e dados reais de empresas foram removidos ou ofuscados para proteção de propriedade intelectual e dados sensíveis.
 
 ---
-Desenvolvido por [VCarmoLima](https://www.linkedin.com/in/viniciusdocarmolima/). Este projeto é protegido por direitos autorais.
+Este projeto está licenciado sob a licença MIT. Consulte o arquivo LICENSE para mais detalhes.
+
+Desenvolvido por [VCarmoLima](https://www.linkedin.com/in/viniciusdocarmolima/). 
