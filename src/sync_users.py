@@ -18,7 +18,7 @@ def sincronizar_banco():
     print("🔄 Lendo arquivo credentials.json...")
 
     try:
-        with open("credentials.json", "r", encoding="utf-8") as f:
+        with open("../credentials.json", "r", encoding="utf-8") as f:
             dados = json.load(f)
     except FileNotFoundError:
         print("❌ Erro: Arquivo credentials.json não encontrado.")
