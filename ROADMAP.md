@@ -3,7 +3,7 @@
 Este documento lista as melhorias planejadas e o progresso atual do Sistema de BIDs.
 
 ## Visão Admin
-- [x] Lógica do "Pátio a Pátio" no lançamento do BID.
+- [ ] Lógica do "Pátio a Pátio" no lançamento do BID.
 - [ ] Adicionar "Termômetro de BID" (indicador se o foco é preço ou prazo).
 - [ ] Acrescentar fluxo de aprovação do gestor.
 - [ ] Gerar código único do BID para fins de auditoria.
