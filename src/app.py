@@ -237,7 +237,12 @@ if not st.session_state.logged_in:
                     if st.form_submit_button("ENTRAR", type="primary"):
                         res = supabase.table("admins").select("*").eq("usuario", user).eq("senha", pw).execute()
                         if res.data:
-                            st.session_state.logged_in = True; st.session_state.user_type = 'admin'; st.session_state.user_data = res.data[0]; st.rerun()
+                            usuario_encontrado = res.data[0]
+                            st.session_state.logged_in = True
+                            st.session_state.user_type = 'admin'
+                            st.session_state.user_data = usuario_encontrado
+                            st.session_state.user_role = usuario_encontrado.get('role', 'standard')
+                            st.rerun()
                         else: st.error("Erro no login.")
                 if st.button("Voltar", use_container_width=True): st.session_state.login_view = 'provider'; st.rerun()
 
@@ -286,12 +291,16 @@ with st.sidebar:
 
     # 3. MENU DE NAVEGAÇÃO
     if st.session_state.user_type == 'admin':
-        st.markdown("---") # Linha separadora para Admin
-        menu_admin = st.radio(
-            "Navegação",
-            ["Novo BID", "Monitoramento", "Análise"],
-            label_visibility="collapsed"
-        )
+        st.markdown("---")
+        
+        # Opções Padrão
+        opcoes = ["Novo BID", "Monitoramento", "Análise"]
+        
+        # Opções Exclusivas MASTER
+        if st.session_state.get('user_role') == 'master':
+            opcoes.append("Gestão de Acessos")
+            
+        menu_admin = st.radio("Navegação", opcoes, label_visibility="collapsed")
     else:
         # Para Transportador: Sem menu escrito, sem títulos extras.
         menu_admin = None
@@ -487,6 +496,112 @@ if st.session_state.user_type == 'admin':
                         st.success("Processo Finalizado!")
                         sleep(2)
                         st.rerun()
+        # 4. TELA: GESTÃO DE ACESSOS (SOMENTE MASTER)
+    elif menu_admin == "Gestão de Acessos":
+        st.markdown("### Painel Master - Gestão de Usuários")
+        
+        # Cria abas para separar os tipos de usuários
+        tab_admins, tab_transp = st.tabs(["Administradores", "Transportadoras"])
+
+        # --- ABA 1: ADMINISTRADORES ---
+        with tab_admins:
+            st.info("Gestão da equipe interna e níveis de acesso.")
+            
+            with st.expander("Novo Administrador", expanded=False):
+                with st.form("novo_admin"):
+                    c1, c2 = st.columns(2)
+                    novo_nome = c1.text_input("Nome Completo")
+                    novo_user = c2.text_input("Login (Usuário)")
+                    
+                    c3, c4 = st.columns(2)
+                    novo_pass = c3.text_input("Senha Provisória", type="password")
+                    novo_role = c4.selectbox("Nível", ["standard", "master"], help="Master: Pode criar/excluir outros usuários.")
+                    
+                    if st.form_submit_button("CRIAR ADMIN"):
+                        try:
+                            supabase.table("admins").insert({
+                                "nome": novo_nome,
+                                "usuario": novo_user,
+                                "senha": novo_pass,
+                                "role": novo_role
+                            }).execute()
+                            st.success(f"Admin {novo_user} criado!")
+                            sleep(1); st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro: {e}")
+
+            st.markdown("#### Equipe Ativa")
+            try:
+                # Tenta ordenar por created_at, se der erro (banco antigo), ordena por nome
+                try:
+                    admins_db = supabase.table("admins").select("*").order("created_at").execute().data
+                except:
+                    admins_db = supabase.table("admins").select("*").order("nome").execute().data
+                
+                if not admins_db: st.warning("Nenhum admin encontrado.")
+
+                for adm in admins_db:
+                    with st.container(border=True):
+                        col_nome, col_role, col_acao = st.columns([3, 1, 1])
+                        col_nome.markdown(f"**{adm['nome']}**<br><span style='font-size:0.8rem;color:#777'>{adm['usuario']}</span>", unsafe_allow_html=True)
+                        
+                        cor_role = "#FF3B3B" if adm.get('role') == 'master' else "#6B7280"
+                        role_txt = adm.get('role', 'standard').upper()
+                        col_role.markdown(f"<span style='color:{cor_role};font-weight:bold'>{role_txt}</span>", unsafe_allow_html=True)
+                        
+                        # Botão Remover (Protege o próprio usuário)
+                        if adm['usuario'] != st.session_state.user_data['usuario']:
+                            if col_acao.button("🗑️", key=f"del_adm_{adm['id']}", help="Remover acesso"):
+                                supabase.table("admins").delete().eq("id", adm['id']).execute()
+                                st.rerun()
+                        else:
+                            col_acao.caption("Você")
+            except Exception as e:
+                st.error(f"Erro ao listar admins: {e}")
+
+        # --- ABA 2: TRANSPORTADORAS ---
+        with tab_transp:
+            st.info("Gestão de parceiros logísticos.")
+
+            with st.expander("Nova Transportadora", expanded=False):
+                with st.form("nova_transp"):
+                    t_nome = st.text_input("Razão Social / Nome")
+                    c1, c2 = st.columns(2)
+                    t_user = c1.text_input("Login de Acesso")
+                    t_pass = c2.text_input("Senha Inicial", type="password")
+                    
+                    if st.form_submit_button("CRIAR PARCEIRO"):
+                        try:
+                            supabase.table("transportadoras").insert({
+                                "nome": t_nome,
+                                "usuario": t_user,
+                                "senha": t_pass
+                            }).execute()
+                            st.success(f"Parceiro {t_nome} criado!")
+                            sleep(1); st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro: {e}")
+
+            st.markdown("#### Parceiros Cadastrados")
+            try:
+                try:
+                    transp_db = supabase.table("transportadoras").select("*").order("created_at", desc=True).execute().data
+                except:
+                    transp_db = supabase.table("transportadoras").select("*").order("nome").execute().data
+
+                if not transp_db: st.warning("Nenhuma transportadora cadastrada.")
+
+                for transp in transp_db:
+                    with st.container(border=True):
+                        c_nome, c_user, c_acao = st.columns([3, 2, 1])
+                        c_nome.markdown(f"**{transp['nome']}**")
+                        c_user.caption(f"Login: {transp['usuario']}")
+                        
+                        if c_acao.button("🗑️", key=f"del_tr_{transp['id']}", help="Remover parceiro"):
+                            supabase.table("transportadoras").delete().eq("id", transp['id']).execute()
+                            st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao listar transportadoras: {e}")
 
 # ==============================================================================
 # ÁREA PRESTADOR
