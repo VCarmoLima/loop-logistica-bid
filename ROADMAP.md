@@ -8,6 +8,7 @@ Este documento lista as melhorias planejadas e o progresso atual do Sistema de B
 - [ ] Acrescentar fluxo de aprovação do gestor.
 - [ ] Gerar código único do BID para fins de auditoria.
 - [ ] Quantidade de veículos (frotas)
+- [ ] Aba histórico de BIDs detalhados
 - [x] Acrescentar menu de gestão do banco de dados (gerir acessos, dados transportadores, etc.).
 - [x] Aprimorar acessos dos administradores (hierarquia de permissões).
 
