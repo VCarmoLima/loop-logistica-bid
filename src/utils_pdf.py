@@ -1,42 +1,85 @@
 from fpdf import FPDF
 import os
 import requests
+import pandas as pd
+import csv
+import json
 from datetime import datetime
 
-DIRETORIO_LOCAL = "Auditoria_BIDs"
-if not os.path.exists(DIRETORIO_LOCAL):
-    os.makedirs(DIRETORIO_LOCAL)
+# --- CONFIGURAÇÃO DE DIRETÓRIO ---
+DIRETORIO_LOGS = "Compliance_Audit_Logs"
+if not os.path.exists(DIRETORIO_LOGS):
+    os.makedirs(DIRETORIO_LOGS)
 
 
 class PDF(FPDF):
     def header(self):
+        # Faixa vermelha
+        self.set_fill_color(220, 53, 69)
+        self.rect(0, 0, 210, 5, "F")
+
+        self.set_y(10)
         self.set_font("Arial", "B", 14)
-        self.cell(0, 10, "RELATÓRIO DE AUDITORIA E HOMOLOGAÇÃO - LOOP BIDs", 0, 1, "C")
-        self.ln(5)
+        self.cell(0, 10, "OFFICIAL AUDIT REPORT & COMPLIANCE", 0, 1, "C")
+        self.set_font("Arial", "I", 8)
+        self.set_text_color(100, 100, 100)
+        self.cell(
+            0,
+            5,
+            "System Generated Document - Bidding Platform",
+            0,
+            1,
+            "C",
+        )
+        self.ln(10)
+        self.set_text_color(0, 0, 0)
 
     def footer(self):
         self.set_y(-15)
         self.set_font("Arial", "I", 8)
+        self.set_text_color(128, 128, 128)
         self.cell(
-            0,
-            10,
-            f"Página {self.page_no()} - Documento Gerado Automaticamente",
-            0,
-            0,
-            "C",
+            0, 10, f"Page {self.page_no()} | Audit ID: {self.audit_id}", 0, 0, "C"
         )
+
+    def chapter_title(self, title):
+        self.set_font("Arial", "B", 12)
+        self.set_fill_color(240, 240, 240)
+        self.set_text_color(0, 0, 0)
+        self.cell(0, 8, f"  {title}", 0, 1, "L", fill=True)
+        self.ln(4)
+
+    def zebra_table(self, header, data, col_widths):
+        # Cabeçalho
+        self.set_font("Arial", "B", 9)
+        self.set_fill_color(52, 58, 64)  # Dark
+        self.set_text_color(255, 255, 255)
+        for i, h in enumerate(header):
+            self.cell(col_widths[i], 7, h, 1, 0, "C", fill=True)
+        self.ln()
+
+        # Dados
+        self.set_font("Arial", "", 9)
+        self.set_text_color(0, 0, 0)
+        fill = False
+        for row in data:
+            self.set_fill_color(245, 245, 245)  # Light Gray
+            for i, d in enumerate(row):
+                align = "L" if i == 0 else "C"
+                self.cell(col_widths[i], 7, str(d), 1, 0, align, fill=fill)
+            self.ln()
+            fill = not fill
+        self.ln(5)
 
 
 def baixar_imagem(url):
     try:
         if not url:
             return None
-        # Nome temporário seguro
         ext = url.split(".")[-1].split("?")[0]
         if len(ext) > 4:
             ext = "jpg"
-        caminho_img = f"temp_img.{ext}"
-
+        caminho_img = f"temp_audit_img.{ext}"
         response = requests.get(url)
         if response.status_code == 200:
             with open(caminho_img, "wb") as f:
@@ -47,173 +90,223 @@ def baixar_imagem(url):
     return None
 
 
-def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings):
+def gerar_logs_csv_json(bid, lances, filename_base):
+    # CSV
+    csv_path = os.path.join(DIRETORIO_LOGS, f"{filename_base}.csv")
+    with open(csv_path, mode="w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f, delimiter=";")
+        writer.writerow(
+            ["DATA_HORA", "TRANSPORTADORA", "VALOR_LANCE", "PRAZO_DIAS", "STATUS"]
+        )
+        for l in lances:
+            writer.writerow(
+                [
+                    l.get("created_at"),
+                    l.get("transportadora_nome"),
+                    str(l.get("valor")).replace(".", ","),
+                    l.get("prazo_dias"),
+                    "VALIDO",
+                ]
+            )
+
+    # JSON
+    json_path = os.path.join(DIRETORIO_LOGS, f"{filename_base}.json")
+    dados_export = {
+        "bid_header": bid,
+        "bid_history": lances,
+        "exported_at": datetime.now().isoformat(),
+    }
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(dados_export, f, indent=4, default=str)
+
+
+def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_brutos):
+    # --- PREPARAÇÃO ---
+    audit_id = f"{bid.get('codigo_unico', 'UNK')}-{datetime.now().strftime('%H%M%S')}"
+    placa_clean = bid.get("placa", "NOPLATE").replace(" ", "")
+    data_clean = datetime.now().strftime("%Y%m%d")
+    filename_base = f"AUDIT_{bid.get('codigo_unico', 'BID')}_{placa_clean}_{data_clean}"
+
+    gerar_logs_csv_json(bid, lances, filename_base)
+
+    # --- FILTRO DE MELHOR LANCE POR TRANSPORTADORA ---
+    df_unique = pd.DataFrame()
+    if lances:
+        df = pd.DataFrame(lances)
+        # Ordena para garantir que pegamos o melhor lance (Menor Preço, depois Menor Prazo, depois Mais Recente)
+        df = df.sort_values(
+            by=["transportadora_nome", "valor", "prazo_dias"],
+            ascending=[True, True, True],
+        )
+        # Remove duplicatas (fica só com a melhor oferta de cada um)
+        df_unique = df.drop_duplicates(subset="transportadora_nome", keep="first")
+
+        # Recalcula Score para o Dashboard
+        min_p = df_unique["valor"].min()
+        min_d = df_unique["prazo_dias"].min()
+
+        def calc_score(row):
+            s_price = (min_p / row["valor"]) * 70
+            s_deadline = (min_d / row["prazo_dias"]) * 30
+            return round(s_price + s_deadline, 2)
+
+        df_unique["score"] = df_unique.apply(calc_score, axis=1)
+
+    # --- INÍCIO PDF ---
     pdf = PDF()
+    pdf.audit_id = audit_id
     pdf.add_page()
 
-    # --- 1. CAPA E DADOS DO LOTE ---
-    pdf.set_fill_color(230, 230, 230)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, "1. DADOS DO VEÍCULO E ROTA", 1, 1, "L", fill=True)
-    pdf.ln(2)
+    # BLOCO 1: INFO DO ATIVO
+    pdf.chapter_title("1. ASSET & OPERATION DETAILS")
 
-    # Imagem do Veículo
     caminho_img = baixar_imagem(bid.get("imagem_url"))
     if caminho_img:
-        # Posiciona imagem à direita
-        pdf.image(caminho_img, x=140, y=35, w=60)
+        pdf.image(caminho_img, x=150, y=35, w=50)
 
-    pdf.set_font("Arial", "B", 10)
-    codigo = bid.get("codigo_unico", "N/A")
-    pdf.cell(0, 8, f"ID do BID: {codigo}", 0, 1, "L")
-    pdf.ln(2)
-
-    pdf.set_font("Arial", "B", 10)
-    pdf.cell(25, 6, "Modelo:", 0, 0)
     pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 6, f"{bid['titulo']}", 0, 1)
-
-    # Nova linha para Placa e Categoria
-    pdf.set_font("Arial", "B", 10)
-    pdf.cell(25, 6, "Placa:", 0, 0)
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(40, 6, f"{bid.get('placa', '---')}", 0, 0)  # Placa
-
-    pdf.set_font("Arial", "B", 10)
-    pdf.cell(25, 6, "Categoria:", 0, 0)
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 6, f"{bid.get('categoria_veiculo', '---')}", 0, 1)  # Categoria
-
-    pdf.set_font("Arial", "B", 10)
-    pdf.cell(25, 6, "Quantidade:", 0, 0)
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 6, f"{bid.get('quantidade_veiculos', 1)} unidade(s)", 0, 1)
-
-    pdf.ln(4)
-
-    pdf.set_font("Arial", "", 9)
-    pdf.cell(120, 6, f"Origem: {bid['origem']}", 0, 1)
-    pdf.multi_cell(120, 5, f"Endereço: {bid['endereco_retirada']}")
-    pdf.ln(2)
-
-    pdf.cell(120, 6, f"Destino: {bid['destino']}", 0, 1)
-    pdf.multi_cell(120, 5, f"Endereço: {bid['endereco_entrega']}")
+    pdf.cell(40, 6, "Audit Reference:", 0, 0, "B")
+    pdf.cell(0, 6, bid.get("codigo_unico", "N/A"), 0, 1)
+    pdf.cell(40, 6, "Vehicle Model:", 0, 0, "B")
+    pdf.cell(0, 6, bid["titulo"], 0, 1)
+    pdf.cell(40, 6, "License Plate:", 0, 0, "B")
+    pdf.cell(0, 6, bid.get("placa", "---"), 0, 1)
+    pdf.cell(40, 6, "Category:", 0, 0, "B")
+    pdf.cell(0, 6, bid.get("categoria_veiculo", "---").upper(), 0, 1)
+    pdf.cell(40, 6, "Quantity:", 0, 0, "B")
+    pdf.cell(0, 6, str(bid.get("quantidade_veiculos", 1)), 0, 1)
     pdf.ln(5)
 
-    # Remove imagem temporária
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 6, "LOGISTICS ROUTE:", 0, 1)
+    pdf.set_font("Arial", "", 9)
+    pdf.multi_cell(130, 5, f"FROM: {bid['origem']}\nTO:      {bid['destino']}")
+    pdf.ln(8)
+
     if caminho_img and os.path.exists(caminho_img):
         os.remove(caminho_img)
 
-    # --- 2. VENCEDOR HOMOLOGADO (ESCOLHA DO ADMIN) ---
-    pdf.ln(10)
-    pdf.set_font("Arial", "B", 12)
-    pdf.set_fill_color(220, 255, 220)  # Verde Claro
-    pdf.cell(0, 8, "2. HOMOLOGAÇÃO (VENCEDOR SELECIONADO)", 1, 1, "L", fill=True)
+    # BLOCO 2: DASHBOARD VENCEDOR (LAYOUT CORRIGIDO)
+    pdf.chapter_title("2. WINNER SCORECARD & PERFORMANCE")
 
-    if vencedor_escolhido:
-        pdf.set_font("Arial", "B", 10)
+    if vencedor_escolhido and not df_unique.empty:
+        v_nome = vencedor_escolhido["transportadora_nome"]
+        v_valor = vencedor_escolhido["valor"]
+        v_prazo = vencedor_escolhido["prazo_dias"]
+
+        # Pega o score calculado
+        try:
+            score_row = df_unique[df_unique["transportadora_nome"] == v_nome].iloc[0]
+            final_score = score_row["score"]
+        except:
+            final_score = 0.0
+
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(0, 10, f"WINNER: {v_nome}", 0, 1, "L")
         pdf.ln(2)
-        pdf.cell(
-            0, 6, f"Transportadora: {vencedor_escolhido['transportadora_nome']}", 0, 1
+
+        # --- CAIXAS LADO A LADO (USANDO CELL PARA NÃO QUEBRAR) ---
+        col_w = 63
+        h_box = 20
+
+        # Salva posição Y inicial
+        y_start = pdf.get_y()
+
+        # 1. PRICE BOX
+        pdf.set_fill_color(248, 249, 250)
+        pdf.set_font("Arial", "B", 9)
+        pdf.cell(col_w, 8, "FINAL PRICE", 1, 0, "C", fill=True)
+
+        # 2. SLA BOX
+        pdf.cell(5, 8, "", 0, 0)  # Espaço
+        pdf.cell(col_w, 8, "SLA / DEADLINE", 1, 0, "C", fill=True)
+
+        # 3. SCORE BOX
+        pdf.cell(5, 8, "", 0, 0)  # Espaço
+        pdf.cell(col_w, 8, "EFFICIENCY SCORE", 1, 1, "C", fill=True)  # Quebra linha
+
+        # --- VALORES DAS CAIXAS ---
+        # 1. Valor Price
+        pdf.set_font("Arial", "B", 14)
+        pdf.set_text_color(220, 53, 69)  # Vermelho
+        pdf.cell(col_w, 15, f"R$ {v_valor:,.2f}", 1, 0, "C")
+
+        # 2. Valor SLA
+        pdf.set_text_color(40, 167, 69)  # Verde
+        pdf.cell(5, 15, "", 0, 0)
+        pdf.cell(col_w, 15, f"{v_prazo} Days", 1, 0, "C")
+
+        # 3. Valor Score
+        pdf.set_text_color(0, 123, 255)  # Azul
+        pdf.cell(5, 15, "", 0, 0)
+        pdf.cell(col_w, 15, f"{final_score} / 100", 1, 1, "C")
+
+        pdf.set_text_color(0)  # Reset cor
+        pdf.ln(10)
+
+    # BLOCO 3: RANKINGS SEPARADOS
+    if not df_unique.empty:
+        # A) RANKING MENOR PREÇO
+        pdf.chapter_title("3.1. BEST PRICE RANKING (Lowest to Highest)")
+        df_price = df_unique.sort_values(by="valor", ascending=True)
+        data_price = []
+        for _, row in df_price.iterrows():
+            data_price.append(
+                [
+                    row["transportadora_nome"],
+                    f"R$ {row['valor']:,.2f}",
+                    f"{row['prazo_dias']} days",
+                ]
+            )
+
+        pdf.zebra_table(
+            ["Provider", "Best Offer", "Deadline"], data_price, [90, 50, 50]
         )
-        pdf.set_font("Arial", "", 10)
-        pdf.cell(0, 6, f"Valor Fechado: R$ {vencedor_escolhido['valor']:,.2f}", 0, 1)
-        pdf.cell(
-            0, 6, f"Prazo de Entrega: {vencedor_escolhido['prazo_dias']} dias", 0, 1
+
+        # B) RANKING MENOR PRAZO
+        pdf.chapter_title("3.2. BEST DEADLINE RANKING (Fastest to Slowest)")
+        df_deadline = df_unique.sort_values(by="prazo_dias", ascending=True)
+        data_deadline = []
+        for _, row in df_deadline.iterrows():
+            data_deadline.append(
+                [
+                    row["transportadora_nome"],
+                    f"{row['prazo_dias']} days",
+                    f"R$ {row['valor']:,.2f}",
+                ]
+            )
+
+        pdf.zebra_table(
+            ["Provider", "Deadline", "Price Info"], data_deadline, [90, 50, 50]
         )
-        pdf.cell(
-            0, 6, f"Homologado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", 0, 1
-        )
-    else:
-        pdf.cell(
-            0, 6, "Nenhum vencedor selecionado (Leilão Deserto ou Cancelado).", 0, 1
-        )
 
-    pdf.ln(5)
-
-    # --- 3. ANÁLISE COMPARATIVA (RANKINGS) ---
-    pdf.set_font("Arial", "B", 12)
-    pdf.set_fill_color(230, 230, 230)
-    pdf.cell(0, 8, "3. ANÁLISE COMPETITIVA (Rankings)", 1, 1, "L", fill=True)
-    pdf.ln(3)
-
-    col_w = 63
-
-    # Cabeçalhos
-    y_start = pdf.get_y()
-    pdf.set_font("Arial", "B", 9)
-    pdf.cell(col_w, 6, "Melhor PREÇO", 1, 0, "C")
-    pdf.cell(col_w, 6, "Melhor PRAZO", 1, 0, "C")
-    pdf.cell(col_w, 6, "Melhor CUSTO-BENEFÍCIO", 1, 1, "C")
-
-    # Conteúdo dos Rankings
-    # Rankings vem como lista de dicts: [{'nome':..., 'val':...}, ...]
-
-    max_rows = max(
-        len(rankings["preco"]), len(rankings["prazo"]), len(rankings["score"])
-    )
-    pdf.set_font("Arial", "", 8)
-
-    for i in range(max_rows):
-        # Coluna Preço
-        if i < len(rankings["preco"]):
-            d = rankings["preco"][i]
-            txt = f"{i+1}. {d['transportadora_nome']}\nR$ {d['valor']:.2f}"
-        else:
-            txt = ""
-        x_atual = pdf.get_x()
-        y_atual = pdf.get_y()
-        pdf.multi_cell(col_w, 5, txt, 1, "C")
-        pdf.set_xy(x_atual + col_w, y_atual)
-
-        # Coluna Prazo
-        if i < len(rankings["prazo"]):
-            d = rankings["prazo"][i]
-            txt = f"{i+1}. {d['transportadora_nome']}\n{d['prazo_dias']} dias"
-        else:
-            txt = ""
-        x_atual = pdf.get_x()
-        y_atual = pdf.get_y()
-        pdf.multi_cell(col_w, 5, txt, 1, "C")
-        pdf.set_xy(x_atual + col_w, y_atual)
-
-        # Coluna Score
-        if i < len(rankings["score"]):
-            d = rankings["score"][i]
-            txt = f"{i+1}. {d['transportadora_nome']}\nNota: {d['score']:.1f}"
-        else:
-            txt = ""
-        x_atual = pdf.get_x()
-        y_atual = pdf.get_y()
-        pdf.multi_cell(col_w, 5, txt, 1, "C")
-        pdf.set_xy(
-            x_atual + col_w, y_atual
-        )  # Volta pro início da próxima linha? Não, vai pro fim.
-
-        pdf.ln(10)  # Avança linha (ajuste manual de altura pois multicell é chato)
-
-    # --- 4. HISTÓRICO COMPLETO ---
+    # BLOCO 4: AUDIT TRAIL
     pdf.add_page()
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, "4. HISTÓRICO COMPLETO DE LANCES", 1, 1, "L", fill=True)
-    pdf.ln(2)
+    pdf.chapter_title("4. FULL AUDIT TRAIL (ALL BIDS HISTORY)")
 
-    pdf.set_font("Arial", "B", 8)
-    pdf.cell(60, 6, "Transportadora", 1)
-    pdf.cell(30, 6, "Valor", 1)
-    pdf.cell(20, 6, "Prazo", 1)
-    pdf.cell(50, 6, "Data/Hora", 1)
-    pdf.ln()
+    header_hist = ["Timestamp", "Provider", "Bid Value", "Deadline"]
+    hist_data = []
+    # Ordena cronologicamente
+    for l in sorted(lances, key=lambda x: x["created_at"]):
+        try:
+            dt = datetime.fromisoformat(l["created_at"].replace("Z", ""))
+            fmt_date = dt.strftime("%d/%m/%Y %H:%M:%S")
+        except:
+            fmt_date = l["created_at"]
 
-    pdf.set_font("Arial", "", 8)
-    for l in lances:
-        pdf.cell(60, 6, l["transportadora_nome"], 1)
-        pdf.cell(30, 6, f"R$ {l['valor']:.2f}", 1)
-        pdf.cell(20, 6, f"{l['prazo_dias']} dias", 1)
-        pdf.cell(50, 6, str(l["created_at"])[:16].replace("T", " "), 1)
-        pdf.ln()
+        hist_data.append(
+            [
+                fmt_date,
+                l["transportadora_nome"],
+                f"R$ {l['valor']:,.2f}",
+                str(l["prazo_dias"]),
+            ]
+        )
 
-    nome_arquivo = f"Auditoria_{bid['titulo'].replace(' ', '_')}_{bid['id'][:6]}.pdf"
-    path = os.path.join(DIRETORIO_LOCAL, nome_arquivo)
-    pdf.output(path)
-    return path
+    pdf.zebra_table(header_hist, hist_data, [45, 75, 40, 30])
+
+    # SALVAR
+    path_pdf = os.path.join(DIRETORIO_LOGS, f"{filename_base}.pdf")
+    pdf.output(path_pdf)
+
+    return path_pdf

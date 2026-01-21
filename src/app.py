@@ -522,7 +522,7 @@ if st.session_state.user_type == "admin":
                         "status": "ABERTO",
                     }
                     supabase.table("bids").insert(dados).execute()
-                    st.success(f"BID {cod_unico} Lançado com Sucesso!")
+                    st.success(f"{cod_unico} Lançado com Sucesso!")
 
     # 2. TELA: MONITORAMENTO
     elif menu_admin == "Monitoramento":
@@ -922,12 +922,12 @@ else:
                 destino_txt = bid["destino"] if bid["destino"] else "---"
 
                 retirada_curta = (
-                    bid.get("endereco_retirada", "")[:60] + "..."
+                    bid.get("endereco_retirada", "")[:60]
                     if bid.get("endereco_retirada")
                     else ""
                 )
                 entrega_curta = (
-                    bid.get("endereco_entrega", "")[:60] + "..."
+                    bid.get("endereco_entrega", "")[:60]
                     if bid.get("endereco_entrega")
                     else ""
                 )
