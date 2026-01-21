@@ -6,11 +6,13 @@ Este documento lista as melhorias planejadas e o progresso atual do Sistema de B
 - [ ] Lógica do "Pátio a Pátio" no lançamento do BID.
 - [ ] Adicionar "Termômetro de BID" (indicador se o foco é preço ou prazo).
 - [ ] Acrescentar fluxo de aprovação do gestor.
-- [ ] Gerar código único do BID para fins de auditoria.
-- [ ] Quantidade de veículos (frotas)
+- [x] Gerar código único do BID para fins de auditoria.
+- [x] Quantidade de veículos (frotas)
 - [ ] Aba histórico de BIDs detalhados
 - [x] Acrescentar menu de gestão do banco de dados (gerir acessos, dados transportadores, etc.).
 - [x] Aprimorar acessos dos administradores (hierarquia de permissões).
+- [x] Arrumar lógica de horário UTC
+- [ ] Na gestão de acessos do Admin, é necessário cadastrar o e-mail do fornecedor, gerar novas senhas e mudar senhas. Sempre que um novo fornecedor for cadastrado, será necessário enviar a ele um e-mail com seu novo login e senha.
 
 ## Visão Transportador
 - [ ] Fluxo de envio de e-mails aos transportadores quando um novo BID for lançado.
@@ -33,6 +35,7 @@ Este documento lista as melhorias planejadas e o progresso atual do Sistema de B
 ## Backend
 - [ ] Gerador de senhas aleatórias enviado para o e-mail do admin.
 - [ ] **Bot Telegram:** Acompanhamento em tempo real de atualizações dos BIDs.
+- [ ] Ajustar lógica do e-mail
 
 ## Frontend
 - [ ] Melhorar visual do menu lateral.
