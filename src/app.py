@@ -42,6 +42,23 @@ def gerar_codigo_bid():
     return f"BID-{prefixo}-{sufixo}"
 
 
+FUSO_BR = timezone(timedelta(hours=-3))
+
+
+def formatar_data_br(data_iso):
+    """Converte string ISO do Banco (UTC) para Brasília formatado"""
+    if not data_iso:
+        return "Data Indefinida"
+    try:
+        # O replace garante que o Python entenda que o 'Z' é UTC
+        dt_utc = datetime.fromisoformat(data_iso.replace("Z", "+00:00"))
+        # Converte para o fuso BR
+        dt_br = dt_utc.astimezone(FUSO_BR)
+        return dt_br.strftime("%d/%m/%Y às %H:%M")
+    except:
+        return "Erro Data"
+
+
 @st.cache_resource
 def iniciar_robo_monitoramento():
     def job():
@@ -526,13 +543,7 @@ if st.session_state.user_type == "admin":
                 cols = st.columns([4, 2, 2])
                 cols[0].markdown(f"### {bid['titulo']}")
 
-                try:
-                    prazo_dt = datetime.fromisoformat(
-                        bid["prazo_limite"].replace("Z", "+00:00")
-                    )
-                    prazo_str = prazo_dt.strftime("%d/%m/%Y às %H:%M")
-                except:
-                    prazo_str = "Data Inválida"
+                prazo_str = formatar_data_br(bid.get("prazo_limite"))
 
                 cols[1].markdown(
                     f"**Encerramento:**<br>{prazo_str}", unsafe_allow_html=True
@@ -873,44 +884,72 @@ else:
                     )
 
             # --- COLUNA 2: INFO E MELHOR LANCE ---
+            # --- COLUNA 2: INFO E DADOS DO LOTE ---
             with col_info:
-                st.markdown(f"## {bid['titulo']}")
+                # 1. CABEÇALHO DO CARD (BADGES)
+                cod = bid.get("codigo_unico", "---")
+                cat = bid.get("categoria_veiculo", "Geral").upper()
+                qtd = bid.get("quantidade_veiculos", 1)
 
-                # Exibe o TIPO DE TRANSPORTE em destaque
-                tipo_transp = bid.get("tipo_transporte", "Transporte Padrão")
-                st.markdown(
-                    f"**Tipo de Serviço:** <span style='color:#FF3B3B; font-weight:bold'>{tipo_transp}</span>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown("<br>", unsafe_allow_html=True)
-
-                # Endereços
-                origem_txt = bid["origem"] if bid["origem"] else "Não informado"
-                retirada_txt = (
-                    bid["endereco_retirada"] if bid["endereco_retirada"] else ""
-                )
-                destino_txt = bid["destino"] if bid["destino"] else "Não informado"
-                entrega_txt = bid["endereco_entrega"] if bid["endereco_entrega"] else ""
-
+                # Badges visuais para Categoria e Quantidade
                 st.markdown(
                     f"""
-                <div class="address-box">
-                    <div class="address-title">ORIGEM</div>
-                    <div class="address-text">{origem_txt}</div>
-                    <div style="font-size:0.8rem; color:#555; margin-top:4px;">{retirada_txt}</div>
-                </div>
-                <div class="address-box">
-                    <div class="address-title">DESTINO</div>
-                    <div class="address-text">{destino_txt}</div>
-                    <div style="font-size:0.8rem; color:#555; margin-top:4px;">{entrega_txt}</div>
+                <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                    <span style="background:#E5E7EB; color:#374151; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{cod}</span>
+                    <span style="background:#DBEAFE; color:#1E40AF; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{cat}</span>
+                    <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{qtd} VEÍCULO(S)</span>
                 </div>
                 """,
                     unsafe_allow_html=True,
                 )
 
-                st.markdown("---")
+                st.markdown(f"## {bid['titulo']}")
 
-                # BUSCA O LÍDER ATUAL (MENOR PREÇO)
+                # Tipo de Transporte com destaque
+                tipo_transp = bid.get("tipo_transporte", "Padrão")
+                st.markdown(
+                    f"**Operação:** <span style='color:#FF3B3B; font-weight:bold'>{tipo_transp}</span>",
+                    unsafe_allow_html=True,
+                )
+
+                # Exibe o encerramento correto em BR
+                encerramento_br = formatar_data_br(bid.get("prazo_limite"))
+                st.caption(f"🕒 Encerra em: {encerramento_br}")
+
+                # Endereços (Mantido igual)
+                # Endereços (Restaurando o visual Address-Box)
+                origem_txt = bid["origem"] if bid["origem"] else "---"
+                destino_txt = bid["destino"] if bid["destino"] else "---"
+
+                retirada_curta = (
+                    bid.get("endereco_retirada", "")[:60] + "..."
+                    if bid.get("endereco_retirada")
+                    else ""
+                )
+                entrega_curta = (
+                    bid.get("endereco_entrega", "")[:60] + "..."
+                    if bid.get("endereco_entrega")
+                    else ""
+                )
+
+                st.markdown(
+                    f"""
+                <div class="address-box">
+                    <div class="address-title">📍 ORIGEM</div>
+                    <div class="address-text">{origem_txt}</div>
+                    <div style="font-size:0.75rem; color:#6B7280; margin-top:2px;">{retirada_curta}</div>
+                </div>
+                
+                <div class="address-box" style="border-left-color: #6B7280;"> <div class="address-title" style="color: #6B7280;">🏁 DESTINO</div>
+                    <div class="address-text">{destino_txt}</div>
+                    <div style="font-size:0.75rem; color:#6B7280; margin-top:2px;">{entrega_curta}</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+
+                # Lances (Mantido igual)
+                # Lances
                 lances = (
                     supabase.table("lances")
                     .select("valor, prazo_dias")
@@ -920,11 +959,12 @@ else:
                     .data
                 )
 
+                # --- CORREÇÃO: DEFINIÇÃO EXPLÍCITA DAS VARIÁVEIS ---
                 melhor_valor = None
                 melhor_prazo = None
 
                 if lances:
-                    # O primeiro da lista é o mais barato
+                    # Pega os dados do líder para usar na validação depois
                     melhor_valor = lances[0]["valor"]
                     melhor_prazo = lances[0]["prazo_dias"]
 
