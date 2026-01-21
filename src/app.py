@@ -447,112 +447,161 @@ if st.session_state.user_type == "admin":
     # 1. TELA: CRIAR BID
     if menu_admin == "Novo BID":
         st.markdown("### Cadastro de Nova Demanda")
-        st.markdown(
-            "Preencha os dados abaixo para iniciar um novo processo de cotação."
-        )
+        st.markdown("Preencha os dados abaixo e revise antes de lançar.")
 
-        with st.container(border=True):
-            with st.form("cadastro_completo", clear_on_submit=True):
-                st.markdown("#### Detalhes do Lote")
+        if "dados_confirmacao_bid" not in st.session_state:
+            st.session_state.dados_confirmacao_bid = None
 
-                st.markdown("#### 1. Dados do Veículo")
+        if not st.session_state.dados_confirmacao_bid:
+            with st.container(border=True):
+                with st.form("cadastro_completo", clear_on_submit=True):
+                    st.markdown("#### Detalhes do Lote")
 
-                # --- MUDANÇA: INCLUÍDO CAMPO DE QUANTIDADE ---
-                c_cat, c_qtd, c_tipo = st.columns([1, 1, 2])
-                cat = c_cat.selectbox(
-                    "Categoria", ["Moto", "Leve", "Utilitário", "Pesado"]
-                )
-                qtd = c_qtd.number_input("Qtd. Veículos", min_value=1, value=1, step=1)
+                    st.markdown("#### 1. Dados do Veículo")
 
-                lista_tipos = [
-                    "Remoção Santander",
-                    "Remoção Frotas",
-                    "Remoção Outros Comitentes",
-                    "Frete Vendido",
-                    "Pátio a Pátio",
-                    "Restituição Santander",
-                    "Restituição Outros Comitente",
-                ]
-                tipo_transporte = c_tipo.selectbox("Tipo de Operação", lista_tipos)
-                # ---------------------------------------------
+                    # --- MUDANÇA: INCLUÍDO CAMPO DE QUANTIDADE ---
+                    c_cat, c_qtd, c_tipo = st.columns([1, 1, 2])
+                    cat = c_cat.selectbox(
+                        "Categoria", ["Moto", "Leve", "Utilitário", "Pesado"]
+                    )
+                    qtd = c_qtd.number_input(
+                        "Qtd. Veículos", min_value=1, value=1, step=1
+                    )
 
-                col_placa, col_modelo = st.columns([1, 3])
-                placa = col_placa.text_input("Placa do Veículo")
-                titulo = col_modelo.text_input(
-                    "Modelo / Versão", placeholder="Ex: SCANIA R450 A 6X2"
-                )
+                    lista_tipos = [
+                        "Remoção Santander",
+                        "Remoção Frotas",
+                        "Remoção Outros Comitentes",
+                        "Frete Vendido",
+                        "Pátio a Pátio",
+                        "Restituição Santander",
+                        "Restituição Outros Comitente",
+                    ]
+                    tipo_transporte = c_tipo.selectbox("Tipo de Operação", lista_tipos)
+                    # ---------------------------------------------
 
-                st.markdown("#### Rota Logística")
-                c1, c2 = st.columns(2)
-                origem = c1.text_input("Cidade Origem")
-                end_ret = c1.text_area("Endereço Coleta", height=80)
-                destino = c2.text_input("Cidade Destino")
-                end_ent = c2.text_area("Endereço Entrega", height=80)
+                    col_placa, col_modelo = st.columns([1, 3])
+                    placa = col_placa.text_input("Placa do Veículo")
+                    titulo = col_modelo.text_input(
+                        "Modelo / Versão", placeholder="Ex: SCANIA R450 A 6X2"
+                    )
 
-                st.markdown("#### Encerramento")
-                c3, c4 = st.columns(2)
-                data_limite = c3.date_input("Data de Encerramento")
-                hora_limite = c4.time_input("Horário Limite")
+                    st.markdown("#### Rota Logística")
+                    c1, c2 = st.columns(2)
+                    origem = c1.text_input("Cidade Origem")
+                    end_ret = c1.text_area("Endereço Coleta", height=80)
+                    destino = c2.text_input("Cidade Destino")
+                    end_ent = c2.text_area("Endereço Entrega", height=80)
 
-                st.markdown("#### Status")
-                c5, c6 = st.columns(2)
-                chave = c5.checkbox("Possui Chave")
-                funciona = c6.checkbox("Veículo Funciona")
+                    st.markdown("#### Encerramento")
+                    c3, c4 = st.columns(2)
+                    data_limite = c3.date_input("Data de Encerramento")
+                    hora_limite = c4.time_input("Horário Limite")
 
-                imagem = st.file_uploader(
-                    "Foto do Lote", type=["png", "jpg", "jpeg", "webp"]
-                )
+                    st.markdown("#### Status")
+                    c5, c6 = st.columns(2)
+                    chave = c5.checkbox("Possui Chave")
+                    funciona = c6.checkbox("Veículo Funciona")
 
-                st.markdown("---")
-                btn_criar = st.form_submit_button(
-                    "LANÇAR BID NO MERCADO", type="primary"
-                )
+                    imagem = st.file_uploader(
+                        "Foto do Lote", type=["png", "jpg", "jpeg", "webp"]
+                    )
 
-                if btn_criar and titulo:
-                    # Combinar Data e Hora
-                    data_completa = datetime.combine(data_limite, hora_limite)
-                    fuso_br = timezone(timedelta(hours=-3))
-                    data_com_tz = data_completa.replace(tzinfo=fuso_br)
+                    st.markdown("---")
+                    btn_revisar = st.form_submit_button("REVISAR DADOS", type="primary")
 
-                    cod_unico = gerar_codigo_bid()
+                    if btn_revisar and titulo:
+                        # Combinar Data e Hora
+                        data_completa = datetime.combine(data_limite, hora_limite)
+                        fuso_br = timezone(timedelta(hours=-3))
+                        data_com_tz = data_completa.replace(tzinfo=fuso_br)
 
-                    url_img = None
-                    if imagem:
-                        try:
-                            safe_filename = imagem.name.replace(" ", "_")
-                            nome_arq = (
-                                f"{int(datetime.now().timestamp())}_{safe_filename}"
-                            )
-                            supabase.storage.from_("veiculos").upload(
-                                nome_arq,
-                                imagem.getvalue(),
-                                {"content-type": imagem.type},
-                            )
-                            url_img = supabase.storage.from_("veiculos").get_public_url(
-                                nome_arq
-                            )
-                        except Exception as e:
-                            st.warning(f"Erro imagem: {e}")
+                        cod_unico = gerar_codigo_bid()
 
-                    dados = {
-                        "codigo_unico": cod_unico,
-                        "categoria_veiculo": cat,
-                        "quantidade_veiculos": qtd,
-                        "titulo": titulo,
-                        "placa": placa,
-                        "tipo_transporte": tipo_transporte,
-                        "origem": origem,
-                        "endereco_retirada": end_ret,
-                        "destino": destino,
-                        "endereco_entrega": end_ent,
-                        "possui_chave": chave,
-                        "funciona": funciona,
-                        "prazo_limite": data_com_tz.isoformat(),
-                        "imagem_url": url_img,
-                        "status": "ABERTO",
-                    }
-                    supabase.table("bids").insert(dados).execute()
-                    st.success(f"{cod_unico} Lançado com Sucesso!")
+                        url_img = None
+                        if imagem:
+                            try:
+                                safe_filename = imagem.name.replace(" ", "_")
+                                nome_arq = (
+                                    f"{int(datetime.now().timestamp())}_{safe_filename}"
+                                )
+                                supabase.storage.from_("veiculos").upload(
+                                    nome_arq,
+                                    imagem.getvalue(),
+                                    {"content-type": imagem.type},
+                                )
+                                url_img = supabase.storage.from_(
+                                    "veiculos"
+                                ).get_public_url(nome_arq)
+                            except Exception as e:
+                                st.warning(f"Erro imagem: {e}")
+
+                        dados = {
+                            "codigo_unico": cod_unico,
+                            "categoria_veiculo": cat,
+                            "quantidade_veiculos": qtd,
+                            "titulo": titulo,
+                            "placa": placa,
+                            "tipo_transporte": tipo_transporte,
+                            "origem": origem,
+                            "endereco_retirada": end_ret,
+                            "destino": destino,
+                            "endereco_entrega": end_ent,
+                            "possui_chave": chave,
+                            "funciona": funciona,
+                            "prazo_limite": data_com_tz.isoformat(),
+                            "imagem_url": url_img,
+                            "status": "ABERTO",
+                            "display_prazo": data_com_tz.strftime("%d/%m/%Y às %H:%M"),
+                        }
+                        st.rerun()
+        else:
+            dados = st.session_state.dados_confirmacao_bid
+
+            st.warning("⚠️ **ATENÇÃO:** Revise os dados abaixo antes de lançar o BID.")
+
+            with st.container(border=True):
+                c1, c2 = st.columns([1, 3])
+                if dados["imagem_url"]:
+                    c1.image(dados["imagem_url"], use_container_width=True)
+                else:
+                    c1.info("Sem foto")
+
+                with c2:
+                    st.markdown(f"### {dados['titulo']}")
+                    st.markdown(f"**Operação:** {dados['tipo_transporte']}")
+                    st.markdown(
+                        f"**Placa:** {dados['placa']} | **Qtd:** {dados['quantidade_veiculos']}"
+                    )
+                    st.divider()
+                    st.markdown(f"📍 **Origem:** {dados['origem']}")
+                    st.markdown(f"🏁 **Destino:** {dados['destino']}")
+                    st.divider()
+                    st.markdown(
+                        f"🕒 **Encerramento:** <span style='color:red; font-weight:bold'>{dados['display_prazo']}</span>",
+                        unsafe_allow_html=True,
+                    )
+
+            col_conf_1, col_conf_2 = st.columns(2)
+
+            if col_conf_1.button(
+                "CONFIRMAR E LANÇAR", type="primary", use_container_width=True
+            ):
+                # Remove campo auxiliar de display antes de salvar
+                dados_save = dados.copy()
+                del dados_save["display_prazo"]
+
+                supabase.table("bids").insert(dados_save).execute()
+                st.success(f"BID {dados['codigo_unico']} Criado com Sucesso!")
+
+                # Limpa sessão
+                st.session_state.dados_confirmacao_bid = None
+                sleep(2)
+                st.rerun()
+
+            if col_conf_2.button("VOLTAR E CORRIGIR", use_container_width=True):
+                st.session_state.dados_confirmacao_bid = None
+                st.rerun()
 
     # 2. TELA: MONITORAMENTO
     elif menu_admin == "Monitoramento":
@@ -1276,9 +1325,17 @@ else:
                         st.info("Seja o primeiro a ofertar!")
 
                 # --- COLUNA 3: DAR LANCE ---
-                with col_lance:
-                    st.markdown("#### Enviar Proposta")
+                # --- COLUNA 3: DAR LANCE (COM CONFIRMAÇÃO) ---
+            with col_lance:
+                st.markdown("#### Enviar Proposta")
 
+                # Chave única para controle de confirmação deste BID específico
+                key_confirm = f"confirm_lance_{bid['id']}"
+                if key_confirm not in st.session_state:
+                    st.session_state[key_confirm] = False
+
+                # Se NÃO estiver confirmando, mostra inputs
+                if not st.session_state[key_confirm]:
                     val = st.number_input(
                         f"Valor (R$)", min_value=0.0, step=50.0, key=f"v_{bid['id']}"
                     )
@@ -1286,7 +1343,6 @@ else:
                         f"Prazo (Dias)", min_value=1, step=1, key=f"p_{bid['id']}"
                     )
 
-                    # Data limite do cliente (informativo)
                     if bid.get("data_entrega_limite"):
                         try:
                             dl_fmt = datetime.strptime(
@@ -1296,36 +1352,62 @@ else:
                         except:
                             pass
 
+                    # Botão inicial de validação
                     if st.button(
-                        "ENVIAR LANCE", key=f"btn_{bid['id']}", type="primary"
+                        "ENVIAR LANCE", key=f"btn_pre_{bid['id']}", type="primary"
                     ):
-                        lance_valido = True
-                        msg_erro = ""
-
+                        # Validação preliminar
+                        erro_validacao = ""
                         if melhor_valor is not None:
                             if val > melhor_valor and prazo >= melhor_prazo:
-                                lance_valido = False
-                                msg_erro = f"Seu valor é maior. O prazo deve ser menor que {melhor_prazo} dias."
+                                erro_validacao = f"Seu valor é maior. O prazo deve ser menor que {melhor_prazo} dias."
                             elif val == melhor_valor and prazo >= melhor_prazo:
-                                lance_valido = False
-                                msg_erro = "Preço empatado. Melhore o prazo."
+                                erro_validacao = "Preço empatado. Melhore o prazo."
 
-                        if not lance_valido:
-                            st.error(f"⚠️ {msg_erro}")
+                        if val <= 0:
+                            erro_validacao = "O valor deve ser maior que zero."
+
+                        if erro_validacao:
+                            st.error(f"⚠️ {erro_validacao}")
                         else:
-                            supabase.table("lances").insert(
-                                {
-                                    "bid_id": bid["id"],
-                                    "transportadora_nome": st.session_state.user_data[
-                                        "nome"
-                                    ],
-                                    "valor": val,
-                                    "prazo_dias": prazo,
-                                }
-                            ).execute()
-                            st.success("Lance Aceito!")
-                            sleep(1.5)
+                            # Tudo ok, ativa modo confirmação e salva dados temporários
+                            st.session_state[key_confirm] = True
+                            st.session_state[f"temp_val_{bid['id']}"] = val
+                            st.session_state[f"temp_prazo_{bid['id']}"] = prazo
                             st.rerun()
+
+                # MODO CONFIRMAÇÃO (Card amarelo de alerta)
+                else:
+                    val_temp = st.session_state.get(f"temp_val_{bid['id']}")
+                    prazo_temp = st.session_state.get(f"temp_prazo_{bid['id']}")
+
+                    st.warning("⚠️ **Confirma a oferta?**")
+                    st.markdown(f"Valor: **R$ {val_temp:,.2f}**")
+                    st.markdown(f"Prazo: **{prazo_temp} dias**")
+
+                    c_sim, c_nao = st.columns(2)
+
+                    if c_sim.button("SIM", key=f"btn_yes_{bid['id']}", type="primary"):
+                        supabase.table("lances").insert(
+                            {
+                                "bid_id": bid["id"],
+                                "transportadora_nome": st.session_state.user_data[
+                                    "nome"
+                                ],
+                                "valor": val_temp,
+                                "prazo_dias": prazo_temp,
+                            }
+                        ).execute()
+
+                        st.success("Lance Aceito!")
+                        # Limpa estado
+                        st.session_state[key_confirm] = False
+                        sleep(1.5)
+                        st.rerun()
+
+                    if c_nao.button("NÃO", key=f"btn_no_{bid['id']}"):
+                        st.session_state[key_confirm] = False
+                        st.rerun()
 
         # --- ORIENTAÇÕES (Mantido) ---
         with st.expander("ℹ️ Regras do Leilão e Critérios de Aprovação"):
