@@ -65,7 +65,7 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings):
 
     pdf.set_font("Arial", "B", 10)
     codigo = bid.get("codigo_unico", "N/A")
-    pdf.cell(0, 8, f"CÓDIGO DO PROCESSO: {codigo}", 0, 1, "L")
+    pdf.cell(0, 8, f"ID do BID: {codigo}", 0, 1, "L")
     pdf.ln(2)
 
     pdf.set_font("Arial", "B", 10)
@@ -83,6 +83,11 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings):
     pdf.cell(25, 6, "Categoria:", 0, 0)
     pdf.set_font("Arial", "", 10)
     pdf.cell(0, 6, f"{bid.get('categoria_veiculo', '---')}", 0, 1)  # Categoria
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(25, 6, "Quantidade:", 0, 0)
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(0, 6, f"{bid.get('quantidade_veiculos', 1)} unidade(s)", 0, 1)
 
     pdf.ln(4)
 

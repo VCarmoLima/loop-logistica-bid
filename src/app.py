@@ -408,10 +408,14 @@ if st.session_state.user_type == "admin":
             with st.form("cadastro_completo", clear_on_submit=True):
                 st.markdown("#### Detalhes do Lote")
 
-                col_cat, col_tipo = st.columns([1, 3])
-                cat = col_cat.selectbox(
-                    "Categoria", ["Pesado", "Caminhonete", "Leve", "Moto"]
+                st.markdown("#### 1. Dados do Veículo")
+
+                # --- MUDANÇA: INCLUÍDO CAMPO DE QUANTIDADE ---
+                c_cat, c_qtd, c_tipo = st.columns([1, 1, 2])
+                cat = c_cat.selectbox(
+                    "Categoria", ["Moto", "Leve", "Utilitário", "Pesado"]
                 )
+                qtd = c_qtd.number_input("Qtd. Veículos", min_value=1, value=1, step=1)
 
                 lista_tipos = [
                     "Remoção Santander",
@@ -422,9 +426,9 @@ if st.session_state.user_type == "admin":
                     "Restituição Santander",
                     "Restituição Outros Comitente",
                 ]
-                tipo_transporte = st.selectbox("Tipo de Transporte", lista_tipos)
+                tipo_transporte = c_tipo.selectbox("Tipo de Operação", lista_tipos)
+                # ---------------------------------------------
 
-                # --- NOVO CAMPO: PLACA (ANTES DO MODELO) ---
                 col_placa, col_modelo = st.columns([1, 3])
                 placa = col_placa.text_input("Placa do Veículo")
                 titulo = col_modelo.text_input(
@@ -486,6 +490,7 @@ if st.session_state.user_type == "admin":
                     dados = {
                         "codigo_unico": cod_unico,
                         "categoria_veiculo": cat,
+                        "quantidade_veiculos": qtd,
                         "titulo": titulo,
                         "placa": placa,
                         "tipo_transporte": tipo_transporte,
