@@ -244,6 +244,37 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
         pdf.set_text_color(0)  # Reset cor
         pdf.ln(10)
 
+    # BLOCO EXTRA: WORKFLOW TIMELINE
+    pdf.ln(5)
+    pdf.chapter_title("2.1. APPROVAL WORKFLOW TIMELINE")
+
+    # Busca os logs do objeto bid (que agora vem atualizado do banco)
+    timeline_data = [
+        ["STEP", "RESPONSIBLE & TIMESTAMP"],
+        ["1. Creation", bid.get("log_criacao", "---")],
+        ["2. Auction End", bid.get("log_encerramento", "Auto/Manual")],
+        ["3. Winner Selection", bid.get("log_selecao", "---")],
+        ["4. Final Approval (Master)", bid.get("log_aprovacao", "---")],
+    ]
+
+    # Tabela simples para timeline
+    pdf.set_font("Arial", "", 9)
+    col_w = [60, 130]
+
+    for row in timeline_data:
+        is_header = row[0] == "STEP"
+        pdf.set_font("Arial", "B" if is_header else "", 9)
+        (
+            pdf.set_fill_color(230, 230, 230)
+            if is_header
+            else pdf.set_fill_color(255, 255, 255)
+        )
+
+        pdf.cell(col_w[0], 7, row[0], 1, 0, "L", fill=is_header)
+        pdf.cell(col_w[1], 7, row[1], 1, 1, "L", fill=is_header)
+
+    pdf.ln(10)
+
     # BLOCO 3: RANKINGS SEPARADOS
     if not df_unique.empty:
         # A) RANKING MENOR PREÇO

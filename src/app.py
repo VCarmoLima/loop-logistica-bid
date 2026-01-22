@@ -37,14 +37,52 @@ supabase = init_connection()
 
 
 def gerar_codigo_bid():
+    """Gera código longo e único: BID-202601-XK92MZ4P"""
     prefixo = datetime.now().strftime("%Y%m")
-    sufixo = "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    # 8 Caracteres aleatórios maiúsculos/números
+    sufixo = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
     return f"BID-{prefixo}-{sufixo}"
 
 
-def gerar_senha_aleatoria(tamanho=8):
-    caracteres = string.ascii_letters + string.digits
-    return "".join(random.choice(caracteres) for i in range(tamanho))
+def gerar_senha_forte(tamanho=10):
+    """Gera senha garantindo requisitos mínimos"""
+    if tamanho < 8:
+        tamanho = 8
+
+    # Garante pelo menos 1 de cada categoria
+    senha = [
+        random.choice(string.ascii_uppercase),
+        random.choice(string.ascii_lowercase),
+        random.choice(string.digits),
+        random.choice("@$!%*?&"),
+    ]
+
+    # Preenche o resto
+    todos_caracteres = string.ascii_letters + string.digits + "@$!%*?&"
+    senha += random.choices(todos_caracteres, k=tamanho - 4)
+
+    # Embaralha
+    random.shuffle(senha)
+    return "".join(senha)
+
+
+def validar_senha_input(senha):
+    """Valida se a senha digitada pelo usuário cumpre os requisitos"""
+    if len(senha) < 8:
+        return False, "Mínimo 8 caracteres."
+    if not re.search(r"[A-Z]", senha):
+        return False, "Precisa ter letra maiúscula."
+    if not re.search(r"[0-9]", senha):
+        return False, "Precisa ter número."
+    if not re.search(r"[@$!%*?&]", senha):
+        return False, "Precisa ter caractere especial (@$!%*?&)."
+    return True, "Senha válida."
+
+
+def get_audit_stamp(usuario_nome):
+    """Gera o carimbo de auditoria: Nome - DD/MM/YYYY HH:MM:SS"""
+    agora = datetime.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M:%S")
+    return f"{usuario_nome} em {agora}"
 
 
 def enviar_credenciais(nome, email, usuario, senha, tipo="Novo Acesso"):
@@ -417,6 +455,8 @@ with st.sidebar:
             "Histórico",
             "Gestão de Acessos",
         ]
+        if st.session_state.get("user_role") == "master":
+            opcoes.append("Aprovação")  # <--- NOVO
         menu_admin = st.radio("Navegação", opcoes, label_visibility="collapsed")
     else:
         # TRANSPORTADOR AGORA TEM MENU
@@ -449,17 +489,26 @@ if st.session_state.user_type == "admin":
         st.markdown("### Cadastro de Nova Demanda")
         st.markdown("Preencha os dados abaixo e revise antes de lançar.")
 
+        # Inicializa variáveis de estado
         if "dados_confirmacao_bid" not in st.session_state:
             st.session_state.dados_confirmacao_bid = None
 
+        # Controle para limpar o formulário apenas APÓS o sucesso
+        if "form_key_bid" not in st.session_state:
+            st.session_state.form_key_bid = 0
+
+        # Se NÃO estiver confirmando, mostra o formulário
         if not st.session_state.dados_confirmacao_bid:
             with st.container(border=True):
-                with st.form("cadastro_completo", clear_on_submit=True):
+                # REMOVIDO clear_on_submit=True para evitar bugs
+                # ADICIONADO key dinâmica para limpar manualmente depois
+                with st.form(
+                    key=f"form_bid_{st.session_state.form_key_bid}",
+                    clear_on_submit=False,
+                ):
                     st.markdown("#### Detalhes do Lote")
 
                     st.markdown("#### 1. Dados do Veículo")
-
-                    # --- MUDANÇA: INCLUÍDO CAMPO DE QUANTIDADE ---
                     c_cat, c_qtd, c_tipo = st.columns([1, 1, 2])
                     cat = c_cat.selectbox(
                         "Categoria", ["Moto", "Leve", "Utilitário", "Pesado"]
@@ -478,7 +527,6 @@ if st.session_state.user_type == "admin":
                         "Restituição Outros Comitente",
                     ]
                     tipo_transporte = c_tipo.selectbox("Tipo de Operação", lista_tipos)
-                    # ---------------------------------------------
 
                     col_placa, col_modelo = st.columns([1, 3])
                     placa = col_placa.text_input("Placa do Veículo")
@@ -510,51 +558,57 @@ if st.session_state.user_type == "admin":
                     st.markdown("---")
                     btn_revisar = st.form_submit_button("REVISAR DADOS", type="primary")
 
-                    if btn_revisar and titulo:
-                        # Combinar Data e Hora
-                        data_completa = datetime.combine(data_limite, hora_limite)
-                        fuso_br = timezone(timedelta(hours=-3))
-                        data_com_tz = data_completa.replace(tzinfo=fuso_br)
+                    if btn_revisar:
+                        if not titulo:
+                            st.error("⚠️ O campo 'Modelo / Versão' é obrigatório.")
+                        else:
+                            # Combinar Data e Hora
+                            data_completa = datetime.combine(data_limite, hora_limite)
+                            fuso_br = timezone(timedelta(hours=-3))
+                            data_com_tz = data_completa.replace(tzinfo=fuso_br)
 
-                        cod_unico = gerar_codigo_bid()
+                            cod_unico = gerar_codigo_bid()
 
-                        url_img = None
-                        if imagem:
-                            try:
-                                safe_filename = imagem.name.replace(" ", "_")
-                                nome_arq = (
-                                    f"{int(datetime.now().timestamp())}_{safe_filename}"
-                                )
-                                supabase.storage.from_("veiculos").upload(
-                                    nome_arq,
-                                    imagem.getvalue(),
-                                    {"content-type": imagem.type},
-                                )
-                                url_img = supabase.storage.from_(
-                                    "veiculos"
-                                ).get_public_url(nome_arq)
-                            except Exception as e:
-                                st.warning(f"Erro imagem: {e}")
+                            url_img = None
+                            if imagem:
+                                try:
+                                    safe_filename = imagem.name.replace(" ", "_")
+                                    nome_arq = f"{int(datetime.now().timestamp())}_{safe_filename}"
+                                    supabase.storage.from_("veiculos").upload(
+                                        nome_arq,
+                                        imagem.getvalue(),
+                                        {"content-type": imagem.type},
+                                    )
+                                    url_img = supabase.storage.from_(
+                                        "veiculos"
+                                    ).get_public_url(nome_arq)
+                                except Exception as e:
+                                    st.warning(f"Erro imagem: {e}")
 
-                        dados = {
-                            "codigo_unico": cod_unico,
-                            "categoria_veiculo": cat,
-                            "quantidade_veiculos": qtd,
-                            "titulo": titulo,
-                            "placa": placa,
-                            "tipo_transporte": tipo_transporte,
-                            "origem": origem,
-                            "endereco_retirada": end_ret,
-                            "destino": destino,
-                            "endereco_entrega": end_ent,
-                            "possui_chave": chave,
-                            "funciona": funciona,
-                            "prazo_limite": data_com_tz.isoformat(),
-                            "imagem_url": url_img,
-                            "status": "ABERTO",
-                            "display_prazo": data_com_tz.strftime("%d/%m/%Y às %H:%M"),
-                        }
-                        st.rerun()
+                            # Salva na sessão para confirmação
+                            st.session_state.dados_confirmacao_bid = {
+                                "codigo_unico": cod_unico,
+                                "categoria_veiculo": cat,
+                                "quantidade_veiculos": qtd,
+                                "titulo": titulo,
+                                "placa": placa,
+                                "tipo_transporte": tipo_transporte,
+                                "origem": origem,
+                                "endereco_retirada": end_ret,
+                                "destino": destino,
+                                "endereco_entrega": end_ent,
+                                "possui_chave": chave,
+                                "funciona": funciona,
+                                "prazo_limite": data_com_tz.isoformat(),
+                                "imagem_url": url_img,
+                                "status": "ABERTO",
+                                "display_prazo": data_com_tz.strftime(
+                                    "%d/%m/%Y às %H:%M"
+                                ),
+                            }
+                            st.rerun()
+
+        # TELA DE CONFIRMAÇÃO (FORA DO FORMULÁRIO)
         else:
             dados = st.session_state.dados_confirmacao_bid
 
@@ -587,15 +641,21 @@ if st.session_state.user_type == "admin":
             if col_conf_1.button(
                 "CONFIRMAR E LANÇAR", type="primary", use_container_width=True
             ):
-                # Remove campo auxiliar de display antes de salvar
+                # ... (dentro do botão CONFIRMAR E LANÇAR do menu Novo BID)
                 dados_save = dados.copy()
                 del dados_save["display_prazo"]
+
+                # ADICIONADO: Log de quem criou
+                dados_save["log_criacao"] = get_audit_stamp(
+                    st.session_state.user_data["nome"]
+                )
 
                 supabase.table("bids").insert(dados_save).execute()
                 st.success(f"BID {dados['codigo_unico']} Criado com Sucesso!")
 
-                # Limpa sessão
+                # Limpa sessão e reseta formulário (incrementando a chave)
                 st.session_state.dados_confirmacao_bid = None
+                st.session_state.form_key_bid += 1
                 sleep(2)
                 st.rerun()
 
@@ -632,8 +692,14 @@ if st.session_state.user_type == "admin":
                     "ENCERRAR AGORA", key=f"close_{bid['id']}", type="primary"
                 ):
                     ontem = datetime.now(timezone.utc) - timedelta(days=1)
+                    # ... (dentro do menu Monitoramento, botão ENCERRAR AGORA)
                     supabase.table("bids").update(
-                        {"prazo_limite": ontem.isoformat()}
+                        {
+                            "prazo_limite": ontem.isoformat(),
+                            "log_encerramento": get_audit_stamp(
+                                st.session_state.user_data["nome"]
+                            ),  # NOVO
+                        }
                     ).eq("id", bid["id"]).execute()
                     st.toast("Encerrando...")
                     sleep(2)
@@ -750,30 +816,24 @@ if st.session_state.user_type == "admin":
                     )
                     vencedor_id = opcoes[escolha]
 
+                    # ... (dentro do menu Análise)
                     if st.button(
-                        "CONFIRMAR VENCEDOR", key=f"win_{bid['id']}", type="primary"
+                        "SELECIONAR VENCEDOR", key=f"win_{bid['id']}", type="primary"
                     ):
+                        stamp = get_audit_stamp(st.session_state.user_data["nome"])
+
+                        # Atualiza para status intermediário
                         supabase.table("bids").update(
-                            {"status": "FINALIZADO", "lance_vencedor_id": vencedor_id}
+                            {
+                                "status": "AGUARDANDO_APROVACAO",
+                                "lance_vencedor_id": vencedor_id,
+                                "log_selecao": stamp,
+                            }
                         ).eq("id", bid["id"]).execute()
 
-                        vencedor_obj = next(l for l in lances if l["id"] == vencedor_id)
-                        rankings_dict = {
-                            "preco": rank_preco,
-                            "prazo": rank_prazo,
-                            "score": rank_score,
-                        }
-                        path_pdf = gerar_pdf_auditoria_completo(
-                            bid, lances, vencedor_obj, rankings_dict
+                        st.success(
+                            "Vencedor selecionado! O processo foi enviado para APROVAÇÃO do Master."
                         )
-                        enviar_email_final(
-                            EMAIL_USER,
-                            f"BID Finalizado: {bid['titulo']}",
-                            "Segue auditoria em anexo.",
-                            path_pdf,
-                        )
-
-                        st.success("Processo Finalizado!")
                         sleep(2)
                         st.rerun()
 
@@ -848,7 +908,6 @@ if st.session_state.user_type == "admin":
                 else:
                     c2.warning("BID finalizado sem lances (Deserto).")
 
-        # 4. TELA: GESTÃO DE ACESSOS (SOMENTE MASTER)
     # 4. TELA: GESTÃO DE ACESSOS (ATUALIZADO)
     elif menu_admin == "Gestão de Acessos":
         st.markdown("### Gestão de Usuários e Acessos")
@@ -964,83 +1023,187 @@ if st.session_state.user_type == "admin":
                                 ).execute()
                                 st.rerun()
 
-        # --- ABA 2: TRANSPORTADORAS (TODOS ADMINS) ---
-        with tab_transp:
-            st.info("Gestão de parceiros. O parceiro receberá login/senha por e-mail.")
+    elif menu_admin == "Aprovação":
+        # Bloqueio de segurança extra
+        if st.session_state.get("user_role") != "master":
+            st.error("Acesso restrito a Master Admins.")
+            st.stop()
 
-            with st.expander("Nova Transportadora", expanded=False):
-                with st.form("nova_transp_form"):
-                    t_nome = st.text_input("Nome")
-                    t_email = st.text_input("E-mail de Contato")
-                    t_user = st.text_input("Usuário de Acesso")
+        st.markdown("### Aprovação Final (Master)")
+        bids_aprov = (
+            supabase.table("bids")
+            .select("*")
+            .eq("status", "AGUARDANDO_APROVACAO")
+            .execute()
+            .data
+        )
 
-                    if st.form_submit_button("CRIAR PARCEIRO"):
-                        if t_nome and t_email and t_user:
-                            senha_t = gerar_senha_aleatoria()
-                            try:
-                                supabase.table("transportadoras").insert(
-                                    {
-                                        "nome": t_nome,
-                                        "usuario": t_user,
-                                        "email": t_email,
-                                        "senha": senha_t,
-                                    }
-                                ).execute()
-                                enviar_credenciais(t_nome, t_email, t_user, senha_t)
-                                st.success(
-                                    f"Parceiro criado! Email enviado para {t_email}"
-                                )
-                                sleep(1)
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro: {e}")
-                        else:
-                            st.warning("Preencha todos os campos.")
+        if not bids_aprov:
+            st.info("Nenhum BID aguardando aprovação.")
 
-            st.markdown("#### Parceiros Cadastrados")
-            try:
-                trs = (
-                    supabase.table("transportadoras")
-                    .select("*")
-                    .order("nome")
-                    .execute()
-                    .data
-                )
-            except:
-                trs = supabase.table("transportadoras").select("*").execute().data
+        for bid in bids_aprov:
+            with st.container(border=True):
+                st.markdown(f"### {bid['titulo']} ({bid['codigo_unico']})")
 
-            for t in trs:
-                with st.container(border=True):
-                    c1, c2, c3 = st.columns([3, 2, 2])
-                    c1.markdown(
-                        f"**{t['nome']}**<br><span style='font-size:0.8rem'>{t.get('email','Sem Email')}</span>",
-                        unsafe_allow_html=True,
+                # Mostra quem selecionou
+                st.caption(f"Selecionado por: {bid.get('log_selecao', '---')}")
+
+                # Mostra o vencedor escolhido pelo Standard
+                vence_id = bid.get("lance_vencedor_id")
+                if vence_id:
+                    l_vence = (
+                        supabase.table("lances")
+                        .select("*")
+                        .eq("id", vence_id)
+                        .execute()
+                        .data[0]
                     )
-                    c2.caption(f"User: {t['usuario']}")
+                    st.info(
+                        f"Vencedor Indicado: **{l_vence['transportadora_nome']}** - R$ {l_vence['valor']:,.2f}"
+                    )
 
-                    c_reset, c_del = c3.columns(2)
-                    if c_reset.button("🔄 Senha", key=f"rst_t_{t['id']}"):
-                        nova_st = gerar_senha_aleatoria()
-                        supabase.table("transportadoras").update({"senha": nova_st}).eq(
-                            "id", t["id"]
-                        ).execute()
-                        if t.get("email"):
-                            enviar_credenciais(
-                                t["nome"],
-                                t["email"],
-                                t["usuario"],
-                                nova_st,
-                                "Reset de Senha",
+                c1, c2 = st.columns(2)
+                if c1.button(
+                    "✅ APROVAR E FINALIZAR", key=f"ok_{bid['id']}", type="primary"
+                ):
+                    stamp = get_audit_stamp(st.session_state.user_data["nome"])
+
+                    # 1. Atualiza Status
+                    supabase.table("bids").update(
+                        {"status": "FINALIZADO", "log_aprovacao": stamp}
+                    ).eq("id", bid["id"]).execute()
+
+                    # 2. Gera PDF e Envia Email (Movemos a lógica para cá)
+                    # Precisa buscar todos os lances para o PDF
+                    lances = (
+                        supabase.table("lances")
+                        .select("*")
+                        .eq("bid_id", bid["id"])
+                        .execute()
+                        .data
+                    )
+
+                    # Recalcula rankings para o PDF (Copia lógica anterior)
+                    df = pd.DataFrame(lances)
+                    rank_preco = df.sort_values("valor").to_dict("records")
+                    rank_prazo = df.sort_values("prazo_dias").to_dict("records")
+                    # ... (cálculo de score simplificado para passar pro PDF) ...
+
+                    # Gera PDF
+                    # Atualize a chamada para passar os logs se quiser, ou o PDF puxa do objeto 'bid'
+                    # Vamos atualizar o utils_pdf.py no próximo passo para ler os logs do objeto 'bid'
+                    path_pdf = gerar_pdf_auditoria_completo(
+                        bid, lances, l_vence, {}
+                    )  # Rankings opcionais agora
+
+                    enviar_email_final(
+                        EMAIL_USER,
+                        f"BID Finalizado: {bid['titulo']}",
+                        "Auditoria e Aprovação Master em anexo.",
+                        path_pdf,
+                    )
+                    st.success("BID Aprovado e Encerrado!")
+                    sleep(2)
+                    st.rerun()
+
+                if c2.button("❌ REPROVAR (Voltar p/ Análise)", key=f"no_{bid['id']}"):
+                    supabase.table("bids").update(
+                        {
+                            "status": "EM_ANALISE",
+                            "lance_vencedor_id": None,  # Limpa a escolha
+                            "log_selecao": None,
+                        }
+                    ).eq("id", bid["id"]).execute()
+                    st.warning("Devolvido para Análise.")
+                    sleep(2)
+                    st.rerun()
+
+                    # --- ABA 2: TRANSPORTADORAS (TODOS ADMINS) ---
+                    with tab_transp:
+                        st.info(
+                            "Gestão de parceiros. O parceiro receberá login/senha por e-mail."
+                        )
+
+                        with st.expander("Nova Transportadora", expanded=False):
+                            with st.form("nova_transp_form"):
+                                t_nome = st.text_input("Nome")
+                                t_email = st.text_input("E-mail de Contato")
+                                t_user = st.text_input("Usuário de Acesso")
+
+                                if st.form_submit_button("CRIAR PARCEIRO"):
+                                    if t_nome and t_email and t_user:
+                                        senha_t = gerar_senha_aleatoria()
+                                        try:
+                                            supabase.table("transportadoras").insert(
+                                                {
+                                                    "nome": t_nome,
+                                                    "usuario": t_user,
+                                                    "email": t_email,
+                                                    "senha": senha_t,
+                                                }
+                                            ).execute()
+                                            enviar_credenciais(
+                                                t_nome, t_email, t_user, senha_t
+                                            )
+                                            st.success(
+                                                f"Parceiro criado! Email enviado para {t_email}"
+                                            )
+                                            sleep(1)
+                                            st.rerun()
+                                        except Exception as e:
+                                            st.error(f"Erro: {e}")
+                                    else:
+                                        st.warning("Preencha todos os campos.")
+
+                        st.markdown("#### Parceiros Cadastrados")
+                        try:
+                            trs = (
+                                supabase.table("transportadoras")
+                                .select("*")
+                                .order("nome")
+                                .execute()
+                                .data
                             )
-                            st.toast("Nova senha enviada!")
-                        else:
-                            st.error("Sem email!")
+                        except:
+                            trs = (
+                                supabase.table("transportadoras")
+                                .select("*")
+                                .execute()
+                                .data
+                            )
 
-                    if c_del.button("🗑️", key=f"del_t_{t['id']}"):
-                        supabase.table("transportadoras").delete().eq(
-                            "id", t["id"]
-                        ).execute()
-                        st.rerun()
+                        for t in trs:
+                            with st.container(border=True):
+                                c1, c2, c3 = st.columns([3, 2, 2])
+                                c1.markdown(
+                                    f"**{t['nome']}**<br><span style='font-size:0.8rem'>{t.get('email','Sem Email')}</span>",
+                                    unsafe_allow_html=True,
+                                )
+                                c2.caption(f"User: {t['usuario']}")
+
+                                c_reset, c_del = c3.columns(2)
+                                if c_reset.button("🔄 Senha", key=f"rst_t_{t['id']}"):
+                                    nova_st = gerar_senha_aleatoria()
+                                    supabase.table("transportadoras").update(
+                                        {"senha": nova_st}
+                                    ).eq("id", t["id"]).execute()
+                                    if t.get("email"):
+                                        enviar_credenciais(
+                                            t["nome"],
+                                            t["email"],
+                                            t["usuario"],
+                                            nova_st,
+                                            "Reset de Senha",
+                                        )
+                                        st.toast("Nova senha enviada!")
+                                    else:
+                                        st.error("Sem email!")
+
+                                if c_del.button("🗑️", key=f"del_t_{t['id']}"):
+                                    supabase.table("transportadoras").delete().eq(
+                                        "id", t["id"]
+                                    ).execute()
+                                    st.rerun()
 
 # ==============================================================================
 # ÁREA PRESTADOR
@@ -1086,12 +1249,17 @@ else:
 
                         # Validação de troca de senha
                         if nova_senha:
-                            if nova_senha == c_senha:
-                                payload["senha"] = nova_senha
-                                msg_extra = " e Senha"
-                            else:
+                            if nova_senha != c_senha:
                                 st.error("As senhas não conferem!")
                                 st.stop()
+
+                            is_valid, msg = validar_senha_input(nova_senha)
+                            if not is_valid:
+                                st.error(f"Senha fraca: {msg}")
+                                st.stop()
+
+                            payload["senha"] = nova_senha
+                            msg_extra = " e Senha"
 
                         supabase.table("transportadoras").update(payload).eq(
                             "id", user_id
