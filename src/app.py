@@ -410,14 +410,22 @@ with st.sidebar:
     if st.session_state.user_type == "admin":
         st.markdown("---")
 
-        opcoes = ["Novo BID", "Monitoramento", "Análise", "Gestão de Acessos"]
+        opcoes = [
+            "Novo BID",
+            "Monitoramento",
+            "Análise",
+            "Histórico",
+            "Gestão de Acessos",
+        ]
         menu_admin = st.radio("Navegação", opcoes, label_visibility="collapsed")
     else:
         # TRANSPORTADOR AGORA TEM MENU
         st.markdown("---")
 
         menu_provider = st.radio(
-            "Menu", ["Painel de Cargas", "Minha Conta"], label_visibility="collapsed"
+            "Menu",
+            ["Painel de BIDs", "Histórico", "Minha Conta"],
+            label_visibility="collapsed",
         )
 
         # 4. BOTÃO DE LOGOUT (NO FINAL)
@@ -719,6 +727,78 @@ if st.session_state.user_type == "admin":
                         st.success("Processo Finalizado!")
                         sleep(2)
                         st.rerun()
+
+    # 5. TELA: HISTÓRICO (ADMIN)
+    elif menu_admin == "Histórico":
+        st.markdown("### Histórico de BIDs Finalizados")
+
+        # Busca apenas finalizados
+        bids_hist = (
+            supabase.table("bids")
+            .select("*")
+            .eq("status", "FINALIZADO")
+            .order("created_at", desc=True)
+            .execute()
+            .data
+        )
+
+        if not bids_hist:
+            st.info("Nenhum histórico disponível.")
+
+        for bid in bids_hist:
+            # Identificação visual do status/vencedor
+            vencedor_txt = "Sem Vencedor"
+            if bid.get("lance_vencedor_id"):
+                # Busca nome do vencedor
+                v_res = (
+                    supabase.table("lances")
+                    .select("transportadora_nome, valor")
+                    .eq("id", bid["lance_vencedor_id"])
+                    .execute()
+                    .data
+                )
+                if v_res:
+                    vencedor_txt = f"🏆 {v_res[0]['transportadora_nome']} (R$ {v_res[0]['valor']:,.2f})"
+
+            with st.expander(
+                f"{bid.get('codigo_unico','---')} | {bid['titulo']} | {vencedor_txt}"
+            ):
+                c1, c2 = st.columns([1, 2])
+                c1.markdown(f"**Placa:** {bid.get('placa','---')}")
+                c1.markdown(f"**Origem:** {bid['origem']}")
+                c1.markdown(f"**Destino:** {bid['destino']}")
+
+                # Busca todos os lances para recriar o ranking da época
+                lances_hist = (
+                    supabase.table("lances")
+                    .select("*")
+                    .eq("bid_id", bid["id"])
+                    .execute()
+                    .data
+                )
+
+                if lances_hist:
+                    df = pd.DataFrame(lances_hist)
+                    # Recalcula Score para visualização
+                    min_p = df["valor"].min()
+                    min_d = df["prazo_dias"].min()
+                    df["score"] = (min_p / df["valor"]) * 70 + (
+                        min_d / df["prazo_dias"]
+                    ) * 30
+
+                    df_show = df[
+                        ["transportadora_nome", "valor", "prazo_dias", "score"]
+                    ].sort_values(by="score", ascending=False)
+                    df_show.columns = ["Transportadora", "Valor (R$)", "Prazo", "Score"]
+                    df_show["Valor (R$)"] = df_show["Valor (R$)"].apply(
+                        lambda x: f"R$ {x:,.2f}"
+                    )
+                    df_show["Score"] = df_show["Score"].apply(lambda x: f"{x:.1f}")
+
+                    c2.dataframe(df_show, use_container_width=True, hide_index=True)
+                else:
+                    c2.warning("BID finalizado sem lances (Deserto).")
+
         # 4. TELA: GESTÃO DE ACESSOS (SOMENTE MASTER)
     # 4. TELA: GESTÃO DE ACESSOS (ATUALIZADO)
     elif menu_admin == "Gestão de Acessos":
@@ -730,12 +810,10 @@ if st.session_state.user_type == "admin":
 
         # Lógica de Abas condicional
         if is_master:
-            tab_admins, tab_transp = st.tabs(
-                ["👮 Administradores", "🚛 Transportadoras"]
-            )
+            tab_admins, tab_transp = st.tabs(["Administradores", "Transportadoras"])
         else:
             # Standard vê apenas aba de transportadoras
-            (tab_transp,) = st.tabs(["🚛 Transportadoras"])
+            (tab_transp,) = st.tabs(["Transportadoras"])
             tab_admins = None
 
         # --- ABA 1: ADMINISTRADORES (SOMENTE MASTER) ---
@@ -743,7 +821,7 @@ if st.session_state.user_type == "admin":
             with tab_admins:
                 st.info("Cadastro de equipe interna. A senha será enviada por e-mail.")
 
-                with st.expander("➕ Novo Administrador", expanded=False):
+                with st.expander("Novo Administrador", expanded=False):
                     with st.form("novo_admin_form"):
                         c1, c2 = st.columns(2)
                         n_nome = c1.text_input("Nome Completo")
@@ -841,7 +919,7 @@ if st.session_state.user_type == "admin":
         with tab_transp:
             st.info("Gestão de parceiros. O parceiro receberá login/senha por e-mail.")
 
-            with st.expander("➕ Nova Transportadora", expanded=False):
+            with st.expander("Nova Transportadora", expanded=False):
                 with st.form("nova_transp_form"):
                     t_nome = st.text_input("Nome")
                     t_email = st.text_input("E-mail de Contato")
@@ -978,7 +1056,119 @@ else:
         except Exception as e:
             st.error(f"Erro ao carregar dados: {e}")
 
-    elif menu_provider == "Painel de Cargas":
+    elif menu_provider == "Histórico":
+        st.markdown("### Meu Histórico de Participações")
+        meu_nome = st.session_state.user_data["nome"]
+
+        # 1. Descobrir quais BIDs eu participei
+        meus_lances = (
+            supabase.table("lances")
+            .select("bid_id")
+            .eq("transportadora_nome", meu_nome)
+            .execute()
+            .data
+        )
+        ids_participados = list(set([l["bid_id"] for l in meus_lances]))
+
+        if not ids_participados:
+            st.info("Você ainda não participou de BIDs finalizados.")
+        else:
+            # Busca detalhes desses BIDs (apenas finalizados)
+            bids_meus = (
+                supabase.table("bids")
+                .select("*")
+                .in_("id", ids_participados)
+                .eq("status", "FINALIZADO")
+                .order("created_at", desc=True)
+                .execute()
+                .data
+            )
+
+            if not bids_meus:
+                st.info("Seus lances ainda estão em BIDs abertos ou em análise.")
+
+            for bid in bids_meus:
+                with st.container(border=True):
+                    # Lógica de Resultado
+                    resultado = "PERDEU"
+                    cor_status = "red"
+                    win_lance = None
+
+                    # Verifica quem ganhou
+                    if bid.get("lance_vencedor_id"):
+                        raw_win = (
+                            supabase.table("lances")
+                            .select("*")
+                            .eq("id", bid["lance_vencedor_id"])
+                            .execute()
+                            .data
+                        )
+                        if raw_win:
+                            win_lance = raw_win[0]
+                            if win_lance["transportadora_nome"] == meu_nome:
+                                resultado = "GANHOU"
+                                cor_status = "green"
+
+                    # Cabeçalho do Card
+                    col_st, col_tit = st.columns([1, 4])
+                    col_st.markdown(
+                        f"<span style='color:{cor_status}; font-weight:bold; font-size:1.2rem'>{resultado}</span>",
+                        unsafe_allow_html=True,
+                    )
+                    col_tit.markdown(
+                        f"**{bid['titulo']}** ({bid.get('codigo_unico', '')})"
+                    )
+
+                    st.divider()
+
+                    # Comparativo (Feedback)
+                    # Busca MEU melhor lance neste BID
+                    meu_melhor = (
+                        supabase.table("lances")
+                        .select("*")
+                        .eq("bid_id", bid["id"])
+                        .eq("transportadora_nome", meu_nome)
+                        .order("valor", desc=False)
+                        .limit(1)
+                        .execute()
+                        .data[0]
+                    )
+
+                    c1, c2 = st.columns(2)
+                    c1.metric(
+                        "Sua Oferta",
+                        f"R$ {meu_melhor['valor']:,.2f}",
+                        f"{meu_melhor['prazo_dias']} dias",
+                    )
+
+                    if resultado == "GANHOU":
+                        c2.success(
+                            "Parabéns! Sua oferta foi a escolhida pela melhor combinação de Preço e Prazo."
+                        )
+                    elif win_lance:
+                        # MOSTRA DADOS DO VENCEDOR SEM MOSTRAR O NOME (LGPD)
+                        delta_val = win_lance["valor"] - meu_melhor["valor"]
+                        c2.metric(
+                            "Oferta Vencedora (Anônimo)",
+                            f"R$ {win_lance['valor']:,.2f}",
+                            f"{win_lance['prazo_dias']} dias",
+                            delta_color="inverse",
+                        )
+
+                        # Feedback inteligente
+                        motivo = []
+                        if win_lance["valor"] < meu_melhor["valor"]:
+                            motivo.append("Preço menor")
+                        if win_lance["prazo_dias"] < meu_melhor["prazo_dias"]:
+                            motivo.append("Prazo menor")
+                        if not motivo:
+                            motivo.append("Melhor Score Geral (Combinação)")
+
+                        st.caption(f"Motivo da perda: {', '.join(motivo)}.")
+                    else:
+                        c2.info("Este BID foi cancelado ou finalizado sem vencedor.")
+
+    elif menu_provider == "Painel de BIDs":
         # TELA 2: LISTAGEM DE BIDS (Código Original Mantido)
         col_refresh, _ = st.columns([1, 4])
         if col_refresh.button("🔄 Atualizar Lista de BIDs", type="secondary"):
@@ -987,7 +1177,7 @@ else:
         bids = supabase.table("bids").select("*").eq("status", "ABERTO").execute().data
 
         if not bids:
-            st.info("Sem cargas disponíveis no momento.")
+            st.info("Sem BIDs disponíveis no momento.")
 
         for bid in bids:
             with st.container(border=True):
