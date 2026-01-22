@@ -37,7 +37,7 @@ Este documento lista as melhorias planejadas e o progresso atual do Sistema de B
 - [x] Ajustar lógica de envio dos e-mails.
 - [ ] Criar um Bot do Telegram para acompanhamento em tempo real de atualizações dos BIDs.
 
-"---"
+---
 
 # Próximos passos:
 - Refatoração técnica (HTML/CSS para JavaScript/TypeScript).
