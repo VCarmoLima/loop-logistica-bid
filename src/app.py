@@ -42,6 +42,30 @@ def gerar_codigo_bid():
     return f"BID-{prefixo}-{sufixo}"
 
 
+def gerar_senha_aleatoria(tamanho=8):
+    caracteres = string.ascii_letters + string.digits
+    return "".join(random.choice(caracteres) for i in range(tamanho))
+
+
+def enviar_credenciais(nome, email, usuario, senha, tipo="Novo Acesso"):
+    assunto = f"Logística BIDs - Credenciais de Acesso ({tipo})"
+    corpo = f"""
+    Olá, {nome}.
+    
+    Seu acesso ao sistema de BIDs foi configurado/atualizado.
+    
+    Link: https://bidlogistico.streamlit.app/
+    Usuário: {usuario}
+    Senha Provisória: {senha}
+    
+    Recomendamos trocar sua senha no primeiro acesso.
+    
+    Atenciosamente,
+    Equipe Logística
+    """
+    return enviar_email_final(email, assunto, corpo)
+
+
 FUSO_BR = timezone(timedelta(hours=-3))
 
 
@@ -386,17 +410,15 @@ with st.sidebar:
     if st.session_state.user_type == "admin":
         st.markdown("---")
 
-        # Opções Padrão
-        opcoes = ["Novo BID", "Monitoramento", "Análise"]
-
-        # Opções Exclusivas MASTER
-        if st.session_state.get("user_role") == "master":
-            opcoes.append("Gestão de Acessos")
-
+        opcoes = ["Novo BID", "Monitoramento", "Análise", "Gestão de Acessos"]
         menu_admin = st.radio("Navegação", opcoes, label_visibility="collapsed")
     else:
-        # Para Transportador: Sem menu escrito, sem títulos extras.
-        menu_admin = None
+        # TRANSPORTADOR AGORA TEM MENU
+        st.markdown("---")
+
+        menu_provider = st.radio(
+            "Menu", ["Painel de Cargas", "Minha Conta"], label_visibility="collapsed"
+        )
 
         # 4. BOTÃO DE LOGOUT (NO FINAL)
     # Adiciona um espaço flexível antes do logout para separar bem
@@ -698,346 +720,430 @@ if st.session_state.user_type == "admin":
                         sleep(2)
                         st.rerun()
         # 4. TELA: GESTÃO DE ACESSOS (SOMENTE MASTER)
+    # 4. TELA: GESTÃO DE ACESSOS (ATUALIZADO)
     elif menu_admin == "Gestão de Acessos":
-        st.markdown("### Painel Master - Gestão de Usuários")
+        st.markdown("### Gestão de Usuários e Acessos")
 
-        # Cria abas para separar os tipos de usuários
-        tab_admins, tab_transp = st.tabs(["Administradores", "Transportadoras"])
+        # Verifica nível de acesso
+        user_role = st.session_state.user_data.get("role", "standard")
+        is_master = user_role == "master"
 
-        # --- ABA 1: ADMINISTRADORES ---
-        with tab_admins:
-            st.info("Gestão da equipe interna e níveis de acesso.")
+        # Lógica de Abas condicional
+        if is_master:
+            tab_admins, tab_transp = st.tabs(
+                ["👮 Administradores", "🚛 Transportadoras"]
+            )
+        else:
+            # Standard vê apenas aba de transportadoras
+            (tab_transp,) = st.tabs(["🚛 Transportadoras"])
+            tab_admins = None
 
-            with st.expander("Novo Administrador", expanded=False):
-                with st.form("novo_admin"):
-                    c1, c2 = st.columns(2)
-                    novo_nome = c1.text_input("Nome Completo")
-                    novo_user = c2.text_input("Login (Usuário)")
+        # --- ABA 1: ADMINISTRADORES (SOMENTE MASTER) ---
+        if is_master and tab_admins:
+            with tab_admins:
+                st.info("Cadastro de equipe interna. A senha será enviada por e-mail.")
 
-                    c3, c4 = st.columns(2)
-                    novo_pass = c3.text_input("Senha Provisória", type="password")
-                    novo_role = c4.selectbox(
-                        "Nível",
-                        ["standard", "master"],
-                        help="Master: Pode criar/excluir outros usuários.",
-                    )
+                with st.expander("➕ Novo Administrador", expanded=False):
+                    with st.form("novo_admin_form"):
+                        c1, c2 = st.columns(2)
+                        n_nome = c1.text_input("Nome Completo")
+                        n_email = c2.text_input("E-mail Corporativo")
 
-                    if st.form_submit_button("CRIAR ADMIN"):
-                        try:
-                            supabase.table("admins").insert(
-                                {
-                                    "nome": novo_nome,
-                                    "usuario": novo_user,
-                                    "senha": novo_pass,
-                                    "role": novo_role,
-                                }
-                            ).execute()
-                            st.success(f"Admin {novo_user} criado!")
-                            sleep(1)
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro: {e}")
+                        c3, c4 = st.columns(2)
+                        n_user = c3.text_input("Usuário (Login)")
+                        n_role = c4.selectbox("Nível", ["standard", "master"])
 
-            st.markdown("#### Equipe Ativa")
-            try:
-                # Tenta ordenar por created_at, se der erro (banco antigo), ordena por nome
+                        if st.form_submit_button("CRIAR ADMIN"):
+                            if n_nome and n_email and n_user:
+                                senha_temp = gerar_senha_aleatoria()
+                                try:
+                                    supabase.table("admins").insert(
+                                        {
+                                            "nome": n_nome,
+                                            "usuario": n_user,
+                                            "email": n_email,
+                                            "senha": senha_temp,
+                                            "role": n_role,
+                                        }
+                                    ).execute()
+                                    enviar_credenciais(
+                                        n_nome, n_email, n_user, senha_temp
+                                    )
+                                    st.success(
+                                        f"Criado! Credenciais enviadas para {n_email}"
+                                    )
+                                    sleep(1)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Erro: {e}")
+                            else:
+                                st.warning("Preencha todos os campos.")
+
+                st.markdown("#### Equipe Ativa")
+                # Tenta listar admins (tratamento de erro caso coluna created_at não exista em bases antigas)
                 try:
-                    admins_db = (
-                        supabase.table("admins")
-                        .select("*")
-                        .order("created_at")
-                        .execute()
-                        .data
-                    )
-                except:
-                    admins_db = (
+                    adms = (
                         supabase.table("admins")
                         .select("*")
                         .order("nome")
                         .execute()
                         .data
                     )
+                except:
+                    adms = supabase.table("admins").select("*").execute().data
 
-                if not admins_db:
-                    st.warning("Nenhum admin encontrado.")
-
-                for adm in admins_db:
+                for a in adms:
                     with st.container(border=True):
-                        col_nome, col_role, col_acao = st.columns([3, 1, 1])
-                        col_nome.markdown(
-                            f"**{adm['nome']}**<br><span style='font-size:0.8rem;color:#777'>{adm['usuario']}</span>",
+                        c1, c2, c3 = st.columns([3, 2, 2])
+                        c1.markdown(
+                            f"**{a['nome']}**<br><span style='font-size:0.8rem'>{a.get('email','Sem Email')}</span>",
+                            unsafe_allow_html=True,
+                        )
+                        role_color = (
+                            "#FF3B3B" if a.get("role") == "master" else "#6B7280"
+                        )
+                        c2.markdown(
+                            f"<span style='color:{role_color};font-weight:bold'>{a.get('role','standard').upper()}</span>",
                             unsafe_allow_html=True,
                         )
 
-                        cor_role = (
-                            "#FF3B3B" if adm.get("role") == "master" else "#6B7280"
-                        )
-                        role_txt = adm.get("role", "standard").upper()
-                        col_role.markdown(
-                            f"<span style='color:{cor_role};font-weight:bold'>{role_txt}</span>",
-                            unsafe_allow_html=True,
-                        )
-
-                        # Botão Remover (Protege o próprio usuário)
-                        if adm["usuario"] != st.session_state.user_data["usuario"]:
-                            if col_acao.button(
-                                "🗑️", key=f"del_adm_{adm['id']}", help="Remover acesso"
+                        # Ações (Reset e Delete)
+                        if a["usuario"] != st.session_state.user_data["usuario"]:
+                            c_reset, c_del = c3.columns(2)
+                            if c_reset.button(
+                                "🔄 Senha",
+                                key=f"rst_a_{a['id']}",
+                                help="Gerar nova senha e enviar por email",
                             ):
+                                nova_s = gerar_senha_aleatoria()
+                                supabase.table("admins").update({"senha": nova_s}).eq(
+                                    "id", a["id"]
+                                ).execute()
+                                if a.get("email"):
+                                    enviar_credenciais(
+                                        a["nome"],
+                                        a["email"],
+                                        a["usuario"],
+                                        nova_s,
+                                        "Reset de Senha",
+                                    )
+                                    st.toast(f"Nova senha enviada para {a['email']}")
+                                else:
+                                    st.error("Usuário sem email cadastrado!")
+
+                            if c_del.button("🗑️", key=f"del_a_{a['id']}"):
                                 supabase.table("admins").delete().eq(
-                                    "id", adm["id"]
+                                    "id", a["id"]
                                 ).execute()
                                 st.rerun()
-                        else:
-                            col_acao.caption("Você")
-            except Exception as e:
-                st.error(f"Erro ao listar admins: {e}")
 
-        # --- ABA 2: TRANSPORTADORAS ---
+        # --- ABA 2: TRANSPORTADORAS (TODOS ADMINS) ---
         with tab_transp:
-            st.info("Gestão de parceiros logísticos.")
+            st.info("Gestão de parceiros. O parceiro receberá login/senha por e-mail.")
 
-            with st.expander("Nova Transportadora", expanded=False):
-                with st.form("nova_transp"):
-                    t_nome = st.text_input("Razão Social / Nome")
-                    c1, c2 = st.columns(2)
-                    t_user = c1.text_input("Login de Acesso")
-                    t_pass = c2.text_input("Senha Inicial", type="password")
+            with st.expander("➕ Nova Transportadora", expanded=False):
+                with st.form("nova_transp_form"):
+                    t_nome = st.text_input("Nome")
+                    t_email = st.text_input("E-mail de Contato")
+                    t_user = st.text_input("Usuário de Acesso")
 
                     if st.form_submit_button("CRIAR PARCEIRO"):
-                        try:
-                            supabase.table("transportadoras").insert(
-                                {"nome": t_nome, "usuario": t_user, "senha": t_pass}
-                            ).execute()
-                            st.success(f"Parceiro {t_nome} criado!")
-                            sleep(1)
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro: {e}")
+                        if t_nome and t_email and t_user:
+                            senha_t = gerar_senha_aleatoria()
+                            try:
+                                supabase.table("transportadoras").insert(
+                                    {
+                                        "nome": t_nome,
+                                        "usuario": t_user,
+                                        "email": t_email,
+                                        "senha": senha_t,
+                                    }
+                                ).execute()
+                                enviar_credenciais(t_nome, t_email, t_user, senha_t)
+                                st.success(
+                                    f"Parceiro criado! Email enviado para {t_email}"
+                                )
+                                sleep(1)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro: {e}")
+                        else:
+                            st.warning("Preencha todos os campos.")
 
             st.markdown("#### Parceiros Cadastrados")
             try:
-                try:
-                    transp_db = (
-                        supabase.table("transportadoras")
-                        .select("*")
-                        .order("created_at", desc=True)
-                        .execute()
-                        .data
+                trs = (
+                    supabase.table("transportadoras")
+                    .select("*")
+                    .order("nome")
+                    .execute()
+                    .data
+                )
+            except:
+                trs = supabase.table("transportadoras").select("*").execute().data
+
+            for t in trs:
+                with st.container(border=True):
+                    c1, c2, c3 = st.columns([3, 2, 2])
+                    c1.markdown(
+                        f"**{t['nome']}**<br><span style='font-size:0.8rem'>{t.get('email','Sem Email')}</span>",
+                        unsafe_allow_html=True,
                     )
-                except:
-                    transp_db = (
-                        supabase.table("transportadoras")
-                        .select("*")
-                        .order("nome")
-                        .execute()
-                        .data
-                    )
+                    c2.caption(f"User: {t['usuario']}")
 
-                if not transp_db:
-                    st.warning("Nenhuma transportadora cadastrada.")
+                    c_reset, c_del = c3.columns(2)
+                    if c_reset.button("🔄 Senha", key=f"rst_t_{t['id']}"):
+                        nova_st = gerar_senha_aleatoria()
+                        supabase.table("transportadoras").update({"senha": nova_st}).eq(
+                            "id", t["id"]
+                        ).execute()
+                        if t.get("email"):
+                            enviar_credenciais(
+                                t["nome"],
+                                t["email"],
+                                t["usuario"],
+                                nova_st,
+                                "Reset de Senha",
+                            )
+                            st.toast("Nova senha enviada!")
+                        else:
+                            st.error("Sem email!")
 
-                for transp in transp_db:
-                    with st.container(border=True):
-                        c_nome, c_user, c_acao = st.columns([3, 2, 1])
-                        c_nome.markdown(f"**{transp['nome']}**")
-                        c_user.caption(f"Login: {transp['usuario']}")
-
-                        if c_acao.button(
-                            "🗑️", key=f"del_tr_{transp['id']}", help="Remover parceiro"
-                        ):
-                            supabase.table("transportadoras").delete().eq(
-                                "id", transp["id"]
-                            ).execute()
-                            st.rerun()
-            except Exception as e:
-                st.error(f"Erro ao listar transportadoras: {e}")
+                    if c_del.button("🗑️", key=f"del_t_{t['id']}"):
+                        supabase.table("transportadoras").delete().eq(
+                            "id", t["id"]
+                        ).execute()
+                        st.rerun()
 
 # ==============================================================================
 # ÁREA PRESTADOR
 # ==============================================================================
 else:
-    st.sidebar.header("Painel de Cargas")
+    # --- ROTEAMENTO DO MENU DO PRESTADOR ---
+    if menu_provider == "Minha Conta":
+        # TELA 1: GESTÃO DA PRÓPRIA CONTA
+        st.markdown("### Meus Dados de Acesso")
+        st.info(
+            "Mantenha seu e-mail atualizado para receber notificações e recuperar senha."
+        )
 
-    # --- BOTÃO DE ATUALIZAÇÃO (Sem Logoff) ---
-    col_refresh, _ = st.columns([1, 4])
-    if col_refresh.button("🔄 Atualizar Lista de BIDs", type="secondary"):
-        st.rerun()
+        user_id = st.session_state.user_data["id"]
 
-    # BIDs Abertos
-    bids = supabase.table("bids").select("*").eq("status", "ABERTO").execute().data
+        # Busca dados atualizados
+        try:
+            meus_dados = (
+                supabase.table("transportadoras")
+                .select("*")
+                .eq("id", user_id)
+                .execute()
+                .data[0]
+            )
 
-    if not bids:
-        st.info("Sem cargas disponíveis no momento.")
+            with st.container(border=True):
+                with st.form("update_dados_provider"):
+                    novo_email = st.text_input(
+                        "E-mail", value=meus_dados.get("email", "")
+                    )
+                    st.markdown("---")
+                    st.markdown("**Alterar Senha (Opcional)**")
+                    nova_senha = st.text_input(
+                        "Nova Senha",
+                        type="password",
+                        placeholder="Deixe em branco para manter a atual",
+                    )
+                    c_senha = st.text_input("Confirme a Nova Senha", type="password")
 
-    for bid in bids:
-        with st.container(border=True):
-            col_img, col_info, col_lance = st.columns([2, 3, 2])
+                    if st.form_submit_button("SALVAR ALTERAÇÕES", type="primary"):
+                        payload = {"email": novo_email}
+                        msg_extra = ""
 
-            # --- COLUNA 1: IMAGEM ---
-            with col_img:
-                if bid.get("imagem_url"):
-                    st.image(bid["imagem_url"], use_container_width=True)
-                else:
+                        # Validação de troca de senha
+                        if nova_senha:
+                            if nova_senha == c_senha:
+                                payload["senha"] = nova_senha
+                                msg_extra = " e Senha"
+                            else:
+                                st.error("As senhas não conferem!")
+                                st.stop()
+
+                        supabase.table("transportadoras").update(payload).eq(
+                            "id", user_id
+                        ).execute()
+
+                        # Atualiza sessão local
+                        st.session_state.user_data["email"] = novo_email
+                        st.success(f"Dados{msg_extra} atualizados com sucesso!")
+                        sleep(1)
+                        st.rerun()
+        except Exception as e:
+            st.error(f"Erro ao carregar dados: {e}")
+
+    elif menu_provider == "Painel de Cargas":
+        # TELA 2: LISTAGEM DE BIDS (Código Original Mantido)
+        col_refresh, _ = st.columns([1, 4])
+        if col_refresh.button("🔄 Atualizar Lista de BIDs", type="secondary"):
+            st.rerun()
+
+        bids = supabase.table("bids").select("*").eq("status", "ABERTO").execute().data
+
+        if not bids:
+            st.info("Sem cargas disponíveis no momento.")
+
+        for bid in bids:
+            with st.container(border=True):
+                col_img, col_info, col_lance = st.columns([2, 3, 2])
+
+                # --- COLUNA 1: IMAGEM ---
+                with col_img:
+                    if bid.get("imagem_url"):
+                        st.image(bid["imagem_url"], use_container_width=True)
+                    else:
+                        st.markdown(
+                            "<div style='background:#eee;height:150px;display:flex;align-items:center;justify-content:center;color:#999'>Sem Foto</div>",
+                            unsafe_allow_html=True,
+                        )
+
+                # --- COLUNA 2: INFO ---
+                with col_info:
+                    # Badges
+                    cod = bid.get("codigo_unico", "---")
+                    cat = bid.get("categoria_veiculo", "Geral").upper()
+                    qtd = bid.get("quantidade_veiculos", 1)
+
                     st.markdown(
-                        "<div style='background:#eee;height:150px;display:flex;align-items:center;justify-content:center;color:#999'>Sem Foto</div>",
+                        f"""
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                        <span style="background:#E5E7EB; color:#374151; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{cod}</span>
+                        <span style="background:#DBEAFE; color:#1E40AF; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{cat}</span>
+                        <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{qtd} VEÍCULO(S)</span>
+                    </div>
+                    """,
                         unsafe_allow_html=True,
                     )
 
-            # --- COLUNA 2: INFO E MELHOR LANCE ---
-            # --- COLUNA 2: INFO E DADOS DO LOTE ---
-            with col_info:
-                # 1. CABEÇALHO DO CARD (BADGES)
-                cod = bid.get("codigo_unico", "---")
-                cat = bid.get("categoria_veiculo", "Geral").upper()
-                qtd = bid.get("quantidade_veiculos", 1)
+                    st.markdown(f"## {bid['titulo']}")
 
-                # Badges visuais para Categoria e Quantidade
-                st.markdown(
-                    f"""
-                <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
-                    <span style="background:#E5E7EB; color:#374151; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{cod}</span>
-                    <span style="background:#DBEAFE; color:#1E40AF; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{cat}</span>
-                    <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">{qtd} VEÍCULO(S)</span>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+                    tipo_transp = bid.get("tipo_transporte", "Padrão")
+                    st.markdown(
+                        f"**Operação:** <span style='color:#FF3B3B; font-weight:bold'>{tipo_transp}</span>",
+                        unsafe_allow_html=True,
+                    )
 
-                st.markdown(f"## {bid['titulo']}")
+                    encerramento_br = formatar_data_br(bid.get("prazo_limite"))
+                    st.caption(f"🕒 Encerra em: {encerramento_br}")
 
-                # Tipo de Transporte com destaque
-                tipo_transp = bid.get("tipo_transporte", "Padrão")
-                st.markdown(
-                    f"**Operação:** <span style='color:#FF3B3B; font-weight:bold'>{tipo_transp}</span>",
-                    unsafe_allow_html=True,
-                )
+                    # Endereços Visual Novo
+                    origem_txt = bid["origem"] if bid["origem"] else "---"
+                    destino_txt = bid["destino"] if bid["destino"] else "---"
+                    r_c = (
+                        bid.get("endereco_retirada", "")[:60] + "..."
+                        if bid.get("endereco_retirada")
+                        else ""
+                    )
+                    e_c = (
+                        bid.get("endereco_entrega", "")[:60] + "..."
+                        if bid.get("endereco_entrega")
+                        else ""
+                    )
 
-                # Exibe o encerramento correto em BR
-                encerramento_br = formatar_data_br(bid.get("prazo_limite"))
-                st.caption(f"🕒 Encerra em: {encerramento_br}")
+                    st.markdown(
+                        f"""
+                    <div class="address-box">
+                        <div class="address-title">📍 ORIGEM</div>
+                        <div class="address-text">{origem_txt}</div>
+                        <div style="font-size:0.75rem; color:#6B7280; margin-top:2px;">{r_c}</div>
+                    </div>
+                    
+                    <div class="address-box" style="border-left-color: #6B7280;"> 
+                        <div class="address-title" style="color: #6B7280;">🏁 DESTINO</div>
+                        <div class="address-text">{destino_txt}</div>
+                        <div style="font-size:0.75rem; color:#6B7280; margin-top:2px;">{e_c}</div>
+                    </div>
+                    """,
+                        unsafe_allow_html=True,
+                    )
 
-                # Endereços (Mantido igual)
-                # Endereços (Restaurando o visual Address-Box)
-                origem_txt = bid["origem"] if bid["origem"] else "---"
-                destino_txt = bid["destino"] if bid["destino"] else "---"
+                    # Info Lances
+                    lances = (
+                        supabase.table("lances")
+                        .select("valor, prazo_dias")
+                        .eq("bid_id", bid["id"])
+                        .order("valor", desc=False)
+                        .execute()
+                        .data
+                    )
 
-                retirada_curta = (
-                    bid.get("endereco_retirada", "")[:60]
-                    if bid.get("endereco_retirada")
-                    else ""
-                )
-                entrega_curta = (
-                    bid.get("endereco_entrega", "")[:60]
-                    if bid.get("endereco_entrega")
-                    else ""
-                )
+                    melhor_valor = None
+                    melhor_prazo = None
 
-                st.markdown(
-                    f"""
-                <div class="address-box">
-                    <div class="address-title">📍 ORIGEM</div>
-                    <div class="address-text">{origem_txt}</div>
-                    <div style="font-size:0.75rem; color:#6B7280; margin-top:2px;">{retirada_curta}</div>
-                </div>
-                
-                <div class="address-box" style="border-left-color: #6B7280;"> <div class="address-title" style="color: #6B7280;">🏁 DESTINO</div>
-                    <div class="address-text">{destino_txt}</div>
-                    <div style="font-size:0.75rem; color:#6B7280; margin-top:2px;">{entrega_curta}</div>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-
-                # Lances (Mantido igual)
-                # Lances
-                lances = (
-                    supabase.table("lances")
-                    .select("valor, prazo_dias")
-                    .eq("bid_id", bid["id"])
-                    .order("valor", desc=False)
-                    .execute()
-                    .data
-                )
-
-                # --- CORREÇÃO: DEFINIÇÃO EXPLÍCITA DAS VARIÁVEIS ---
-                melhor_valor = None
-                melhor_prazo = None
-
-                if lances:
-                    # Pega os dados do líder para usar na validação depois
-                    melhor_valor = lances[0]["valor"]
-                    melhor_prazo = lances[0]["prazo_dias"]
-
-                    c1, c2 = st.columns(2)
-                    c1.metric("Melhor Preço", f"R$ {melhor_valor:,.2f}")
-                    c2.metric("Prazo a Bater", f"{melhor_prazo} dias")
-                else:
-                    st.info("Seja o primeiro a ofertar!")
-
-            # --- COLUNA 3: DAR LANCE ---
-            with col_lance:
-                st.markdown("#### Enviar Proposta")
-
-                val = st.number_input(
-                    f"Valor (R$)", min_value=0.0, step=50.0, key=f"v_{bid['id']}"
-                )
-                prazo = st.number_input(
-                    f"Prazo (Dias)", min_value=1, step=1, key=f"p_{bid['id']}"
-                )
-
-                if bid.get("data_entrega_limite"):
-                    try:
-                        data_limite_fmt = datetime.strptime(
-                            bid["data_entrega_limite"], "%Y-%m-%d"
-                        ).strftime("%d/%m/%Y")
-                        st.caption(f"Data Limite Cliente: {data_limite_fmt}")
-                    except:
-                        pass
-
-                if st.button("ENVIAR LANCE", key=f"btn_{bid['id']}", type="primary"):
-
-                    # --- VALIDAÇÃO ---
-                    lance_valido = True
-                    msg_erro = ""
-
-                    if melhor_valor is not None:
-                        # Regra: Preço maior ou igual exige prazo menor
-                        if val > melhor_valor and prazo >= melhor_prazo:
-                            lance_valido = False
-                            msg_erro = f"Seu valor é maior. O prazo deve ser menor que {melhor_prazo} dias."
-                        elif val == melhor_valor and prazo >= melhor_prazo:
-                            lance_valido = False
-                            msg_erro = "Preço empatado. Melhore o prazo para assumir a liderança."
-
-                    if not lance_valido:
-                        st.error(f"⚠️ {msg_erro}")
+                    if lances:
+                        melhor_valor = lances[0]["valor"]
+                        melhor_prazo = lances[0]["prazo_dias"]
+                        c1, c2 = st.columns(2)
+                        c1.metric("Melhor Preço", f"R$ {melhor_valor:,.2f}")
+                        c2.metric("Prazo a Bater", f"{melhor_prazo} dias")
                     else:
-                        supabase.table("lances").insert(
-                            {
-                                "bid_id": bid["id"],
-                                "transportadora_nome": st.session_state.user_data[
-                                    "nome"
-                                ],
-                                "valor": val,
-                                "prazo_dias": prazo,
-                            }
-                        ).execute()
+                        st.info("Seja o primeiro a ofertar!")
 
-                        st.success("Lance Aceito!")
-                        sleep(1.5)
-                        st.rerun()
+                # --- COLUNA 3: DAR LANCE ---
+                with col_lance:
+                    st.markdown("#### Enviar Proposta")
 
-        # --- ORIENTAÇÕES AO TRANSPORTADOR ---
+                    val = st.number_input(
+                        f"Valor (R$)", min_value=0.0, step=50.0, key=f"v_{bid['id']}"
+                    )
+                    prazo = st.number_input(
+                        f"Prazo (Dias)", min_value=1, step=1, key=f"p_{bid['id']}"
+                    )
+
+                    # Data limite do cliente (informativo)
+                    if bid.get("data_entrega_limite"):
+                        try:
+                            dl_fmt = datetime.strptime(
+                                bid["data_entrega_limite"], "%Y-%m-%d"
+                            ).strftime("%d/%m/%Y")
+                            st.caption(f"Data Limite Cliente: {dl_fmt}")
+                        except:
+                            pass
+
+                    if st.button(
+                        "ENVIAR LANCE", key=f"btn_{bid['id']}", type="primary"
+                    ):
+                        lance_valido = True
+                        msg_erro = ""
+
+                        if melhor_valor is not None:
+                            if val > melhor_valor and prazo >= melhor_prazo:
+                                lance_valido = False
+                                msg_erro = f"Seu valor é maior. O prazo deve ser menor que {melhor_prazo} dias."
+                            elif val == melhor_valor and prazo >= melhor_prazo:
+                                lance_valido = False
+                                msg_erro = "Preço empatado. Melhore o prazo."
+
+                        if not lance_valido:
+                            st.error(f"⚠️ {msg_erro}")
+                        else:
+                            supabase.table("lances").insert(
+                                {
+                                    "bid_id": bid["id"],
+                                    "transportadora_nome": st.session_state.user_data[
+                                        "nome"
+                                    ],
+                                    "valor": val,
+                                    "prazo_dias": prazo,
+                                }
+                            ).execute()
+                            st.success("Lance Aceito!")
+                            sleep(1.5)
+                            st.rerun()
+
+        # --- ORIENTAÇÕES (Mantido) ---
         with st.expander("ℹ️ Regras do Leilão e Critérios de Aprovação"):
             st.markdown(
                 """
             **Como funciona o Ranking?**
             1. **Critério Principal:** O sistema prioriza sempre o **Menor Preço**.
             2. **Critério de Desempate:** Em caso de preços similares, vence quem oferecer o **Menor Prazo**.
-            
-            **Regras para Novos Lances:**
-            * Você não pode dar um lance com valor maior que o atual, a menos que seu prazo de entrega seja melhor (menor).
-            * Lances empatados em preço e prazo não tomam a liderança.
             
             **Avaliação Final (Score):**
             Ao final do tempo, o administrador analisa um Score que combina 70% Preço e 30% Prazo para decidir o vencedor final.
