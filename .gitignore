@@ -5,5 +5,5 @@ __pycache__/
 
 *.pyc
 
-.Auditoria_BIDs/
-Auditoria_BIDs/
+Compliance_Audit_Logs/
+.Compliance_Audit_Logs/

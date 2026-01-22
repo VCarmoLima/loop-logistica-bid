@@ -1023,8 +1023,9 @@ if st.session_state.user_type == "admin":
                                 ).execute()
                                 st.rerun()
 
+    # 4. TELA: APROVAÇÃO (SOMENTE MASTER) - COM RANKINGS
     elif menu_admin == "Aprovação":
-        # Bloqueio de segurança extra
+        # Bloqueio de segurança
         if st.session_state.get("user_role") != "master":
             st.error("Acesso restrito a Master Admins.")
             st.stop()
@@ -1043,13 +1044,13 @@ if st.session_state.user_type == "admin":
 
         for bid in bids_aprov:
             with st.container(border=True):
+                # Cabeçalho do Card
                 st.markdown(f"### {bid['titulo']} ({bid['codigo_unico']})")
-
-                # Mostra quem selecionou
                 st.caption(f"Selecionado por: {bid.get('log_selecao', '---')}")
 
-                # Mostra o vencedor escolhido pelo Standard
+                # Mostra o Vencedor Indicado (Destaque)
                 vence_id = bid.get("lance_vencedor_id")
+                l_vence = None
                 if vence_id:
                     l_vence = (
                         supabase.table("lances")
@@ -1059,12 +1060,83 @@ if st.session_state.user_type == "admin":
                         .data[0]
                     )
                     st.info(
-                        f"Vencedor Indicado: **{l_vence['transportadora_nome']}** - R$ {l_vence['valor']:,.2f}"
+                        f"🏅 Vencedor Indicado pelo Analista: **{l_vence['transportadora_nome']}** - R$ {l_vence['valor']:,.2f} ({l_vence['prazo_dias']} dias)"
                     )
 
-                c1, c2 = st.columns(2)
-                if c1.button(
-                    "✅ APROVAR E FINALIZAR", key=f"ok_{bid['id']}", type="primary"
+                st.divider()
+
+                # --- NOVO: RANKINGS PARA TOMADA DE DECISÃO ---
+                st.markdown("#### 📊 Panorama da Disputa")
+
+                # Busca lances para montar os gráficos
+                lances = (
+                    supabase.table("lances")
+                    .select("*")
+                    .eq("bid_id", bid["id"])
+                    .execute()
+                    .data
+                )
+
+                if lances:
+                    df = pd.DataFrame(lances)
+
+                    # Cálculos (Mesma lógica da Análise)
+                    min_p = df["valor"].min()
+                    min_d = df["prazo_dias"].min()
+                    df["score"] = (min_p / df["valor"]) * 70 + (
+                        min_d / df["prazo_dias"]
+                    ) * 30
+
+                    # Formatação para exibição
+                    df_display = df.copy()
+                    df_display["valor_fmt"] = df_display["valor"].apply(
+                        lambda x: f"R$ {x:,.2f}"
+                    )
+                    df_display["score_fmt"] = df_display["score"].apply(
+                        lambda x: f"{x:.1f}"
+                    )
+
+                    c1, c2, c3 = st.columns(3)
+
+                    with c1:
+                        st.markdown("**Por Preço**")
+                        st.dataframe(
+                            df_display.sort_values("valor")[
+                                ["transportadora_nome", "valor_fmt"]
+                            ],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
+
+                    with c2:
+                        st.markdown("**Por Prazo**")
+                        st.dataframe(
+                            df_display.sort_values("prazo_dias")[
+                                ["transportadora_nome", "prazo_dias"]
+                            ],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
+
+                    with c3:
+                        st.markdown("**Por Score (Custo-Benefício)**")
+                        st.dataframe(
+                            df_display.sort_values("score", ascending=False)[
+                                ["transportadora_nome", "score_fmt"]
+                            ],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
+                else:
+                    st.warning("Não há lances registrados para gerar comparativos.")
+
+                st.divider()
+
+                # --- BOTÕES DE AÇÃO ---
+                col_btn_1, col_btn_2 = st.columns(2)
+
+                if col_btn_1.button(
+                    "APROVAR E FINALIZAR", key=f"ok_{bid['id']}", type="primary"
                 ):
                     stamp = get_audit_stamp(st.session_state.user_data["nome"])
 
@@ -1073,28 +1145,9 @@ if st.session_state.user_type == "admin":
                         {"status": "FINALIZADO", "log_aprovacao": stamp}
                     ).eq("id", bid["id"]).execute()
 
-                    # 2. Gera PDF e Envia Email (Movemos a lógica para cá)
-                    # Precisa buscar todos os lances para o PDF
-                    lances = (
-                        supabase.table("lances")
-                        .select("*")
-                        .eq("bid_id", bid["id"])
-                        .execute()
-                        .data
-                    )
-
-                    # Recalcula rankings para o PDF (Copia lógica anterior)
-                    df = pd.DataFrame(lances)
-                    rank_preco = df.sort_values("valor").to_dict("records")
-                    rank_prazo = df.sort_values("prazo_dias").to_dict("records")
-                    # ... (cálculo de score simplificado para passar pro PDF) ...
-
-                    # Gera PDF
-                    # Atualize a chamada para passar os logs se quiser, ou o PDF puxa do objeto 'bid'
-                    # Vamos atualizar o utils_pdf.py no próximo passo para ler os logs do objeto 'bid'
-                    path_pdf = gerar_pdf_auditoria_completo(
-                        bid, lances, l_vence, {}
-                    )  # Rankings opcionais agora
+                    # 2. Gera PDF e Envia Email
+                    bid["log_aprovacao"] = stamp
+                    path_pdf = gerar_pdf_auditoria_completo(bid, lances, l_vence, {})
 
                     enviar_email_final(
                         EMAIL_USER,
@@ -1102,108 +1155,23 @@ if st.session_state.user_type == "admin":
                         "Auditoria e Aprovação Master em anexo.",
                         path_pdf,
                     )
-                    st.success("BID Aprovado e Encerrado!")
+                    st.success("BID Aprovado e Encerrado com Sucesso!")
                     sleep(2)
                     st.rerun()
 
-                if c2.button("❌ REPROVAR (Voltar p/ Análise)", key=f"no_{bid['id']}"):
+                if col_btn_2.button(
+                    "REPROVAR (Voltar p/ Análise)", key=f"no_{bid['id']}"
+                ):
                     supabase.table("bids").update(
                         {
                             "status": "EM_ANALISE",
-                            "lance_vencedor_id": None,  # Limpa a escolha
+                            "lance_vencedor_id": None,
                             "log_selecao": None,
                         }
                     ).eq("id", bid["id"]).execute()
-                    st.warning("Devolvido para Análise.")
+                    st.warning("BID devolvido para a mesa de Análise.")
                     sleep(2)
                     st.rerun()
-
-                    # --- ABA 2: TRANSPORTADORAS (TODOS ADMINS) ---
-                    with tab_transp:
-                        st.info(
-                            "Gestão de parceiros. O parceiro receberá login/senha por e-mail."
-                        )
-
-                        with st.expander("Nova Transportadora", expanded=False):
-                            with st.form("nova_transp_form"):
-                                t_nome = st.text_input("Nome")
-                                t_email = st.text_input("E-mail de Contato")
-                                t_user = st.text_input("Usuário de Acesso")
-
-                                if st.form_submit_button("CRIAR PARCEIRO"):
-                                    if t_nome and t_email and t_user:
-                                        senha_t = gerar_senha_aleatoria()
-                                        try:
-                                            supabase.table("transportadoras").insert(
-                                                {
-                                                    "nome": t_nome,
-                                                    "usuario": t_user,
-                                                    "email": t_email,
-                                                    "senha": senha_t,
-                                                }
-                                            ).execute()
-                                            enviar_credenciais(
-                                                t_nome, t_email, t_user, senha_t
-                                            )
-                                            st.success(
-                                                f"Parceiro criado! Email enviado para {t_email}"
-                                            )
-                                            sleep(1)
-                                            st.rerun()
-                                        except Exception as e:
-                                            st.error(f"Erro: {e}")
-                                    else:
-                                        st.warning("Preencha todos os campos.")
-
-                        st.markdown("#### Parceiros Cadastrados")
-                        try:
-                            trs = (
-                                supabase.table("transportadoras")
-                                .select("*")
-                                .order("nome")
-                                .execute()
-                                .data
-                            )
-                        except:
-                            trs = (
-                                supabase.table("transportadoras")
-                                .select("*")
-                                .execute()
-                                .data
-                            )
-
-                        for t in trs:
-                            with st.container(border=True):
-                                c1, c2, c3 = st.columns([3, 2, 2])
-                                c1.markdown(
-                                    f"**{t['nome']}**<br><span style='font-size:0.8rem'>{t.get('email','Sem Email')}</span>",
-                                    unsafe_allow_html=True,
-                                )
-                                c2.caption(f"User: {t['usuario']}")
-
-                                c_reset, c_del = c3.columns(2)
-                                if c_reset.button("🔄 Senha", key=f"rst_t_{t['id']}"):
-                                    nova_st = gerar_senha_aleatoria()
-                                    supabase.table("transportadoras").update(
-                                        {"senha": nova_st}
-                                    ).eq("id", t["id"]).execute()
-                                    if t.get("email"):
-                                        enviar_credenciais(
-                                            t["nome"],
-                                            t["email"],
-                                            t["usuario"],
-                                            nova_st,
-                                            "Reset de Senha",
-                                        )
-                                        st.toast("Nova senha enviada!")
-                                    else:
-                                        st.error("Sem email!")
-
-                                if c_del.button("🗑️", key=f"del_t_{t['id']}"):
-                                    supabase.table("transportadoras").delete().eq(
-                                        "id", t["id"]
-                                    ).execute()
-                                    st.rerun()
 
 # ==============================================================================
 # ÁREA PRESTADOR
