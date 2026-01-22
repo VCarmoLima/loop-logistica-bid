@@ -167,24 +167,38 @@ def get_html_template(
     """
 
 
-def enviar_email_background(destinatarios, assunto, html_content, lista_anexos=None):
+def enviar_email_background(
+    destinatarios, assunto, html_content, lista_anexos=None, cc_list=None
+):
     """Função interna para envio real (Roda em Thread)"""
     try:
-        # Se for string única, transforma em lista
+        # Garante que destinatarios seja lista
         if isinstance(destinatarios, str):
             destinatarios = [destinatarios]
+        # Garante que cc_list seja lista
+        if cc_list and isinstance(cc_list, str):
+            cc_list = [cc_list]
 
         msg = MIMEMultipart()
         msg["From"] = EMAIL_USER
         msg["Subject"] = assunto
-        # Envia como BCC para proteger a lista se for muitos, ou Para se for um só
-        if len(destinatarios) == 1:
-            msg["To"] = destinatarios[0]
-        else:
-            msg["To"] = EMAIL_USER  # Envia para si mesmo
-            msg["Bcc"] = ", ".join(destinatarios)  # Cópia oculta para todos
 
-        msg.attach(MIMEText(html_content, "html"))  # IMPORTANTE: 'html'
+        # LÓGICA DE DESTINATÁRIOS
+        # Cenário A: Envio em Massa (ex: Novo BID para todos) -> Usa BCC para privacidade
+        if len(destinatarios) > 1:
+            msg["To"] = EMAIL_USER
+            msg["Bcc"] = ", ".join(destinatarios)
+            # Se tiver CC em massa (raro), adiciona
+            if cc_list:
+                msg["Cc"] = ", ".join(cc_list)
+
+        # Cenário B: Envio Direto (ex: Vencedor) -> Usa To + CC
+        else:
+            msg["To"] = destinatarios[0]
+            if cc_list:
+                msg["Cc"] = ", ".join(cc_list)
+
+        msg.attach(MIMEText(html_content, "html"))
 
         if lista_anexos:
             from email.mime.application import MIMEApplication
@@ -203,11 +217,12 @@ def enviar_email_background(destinatarios, assunto, html_content, lista_anexos=N
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
+        # send_message extrai os destinatários (To, Cc, Bcc) automaticamente dos headers
         server.send_message(msg)
         server.quit()
-        print(f"📧 Email enviado para {len(destinatarios)} pessoas: {assunto}")
+        print(f"📧 Email enviado para {destinatarios} (CC: {cc_list})")
 
-        # Limpeza de anexos temporários após envio
+        # Limpeza
         if lista_anexos:
             for f in lista_anexos:
                 if os.path.exists(f):
@@ -274,7 +289,7 @@ def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
 
     # --- CENÁRIO B: APROVAÇÃO FINAL (Vencedor + Admins com Anexo) ---
     elif tipo == "APROVACAO_FINAL":
-        # 1. Email para o Vencedor
+        # 1. Email para o Vencedor (Admins em Cópia CC)
         if vencedor_dados and vencedor_dados.get("email"):
             assunto_win = f"🏆 Você Venceu! BID {dados_bid['codigo_unico']}"
             html_win = get_html_template(
@@ -287,25 +302,26 @@ def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
                 link_sistema,
                 "VER DETALHES",
             )
+
+            # AQUI ESTÁ A MÁGICA: Passamos admins no parâmetro cc_list (5º argumento)
             threading.Thread(
                 target=enviar_email_background,
-                args=([vencedor_dados["email"]], assunto_win, html_win),
+                args=([vencedor_dados["email"]], assunto_win, html_win, None, admins),
             ).start()
 
-        # 2. Email para Admins (Com Auditoria)
+        # 2. Email de Auditoria (Apenas para Admins, com arquivos sensíveis)
+        # Mantemos separado pois o vencedor NÃO pode receber os arquivos de log com lances dos concorrentes
         if admins:
-            assunto_adm = f"✅ BID Finalizado/Auditado: {dados_bid['codigo_unico']}"
+            assunto_adm = f"✅ BID Auditado: {dados_bid['codigo_unico']}"
             html_adm = get_html_template(
-                "Processo Finalizado e Aprovado",
+                "Auditoria de Processo Finalizado",
                 f"""
-                <p>O BID <b>{dados_bid['titulo']}</b> foi aprovado pelo Master e finalizado.</p>
-                <p>Seguem em anexo os relatórios de auditoria e logs completos (PDF, CSV, JSON).</p>
-                <p><b>Vencedor:</b> {vencedor_dados['nome'] if vencedor_dados else 'N/A'}</p>
+                <p>O BID foi finalizado e o vencedor notificado (vocês receberam cópia).</p>
+                <p>Seguem em anexo os <b>logs técnicos e auditoria</b> para arquivamento.</p>
                 """,
                 link_sistema,
                 "ACESSAR DASHBOARD",
             )
-            # A thread vai enviar e deletar os arquivos depois
             threading.Thread(
                 target=enviar_email_background,
                 args=(admins, assunto_adm, html_adm, anexos),
