@@ -121,6 +121,234 @@ def formatar_data_br(data_iso):
         return "Erro Data"
 
 
+def get_html_template(
+    titulo, corpo_html, call_to_action_url=None, call_to_action_text="ACESSAR SISTEMA"
+):
+    """Gera um template HTML padronizado com a identidade visual da Loop"""
+    btn_html = ""
+    if call_to_action_url:
+        btn_html = f"""
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{call_to_action_url}" style="background-color: #FF3B3B; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">{call_to_action_text}</a>
+        </div>
+        """
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: 'Helvetica', 'Arial', sans-serif; background-color: #f3f4f6; margin: 0; padding: 0; }}
+            .container {{ max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+            .header {{ background-color: #FF3B3B; padding: 20px; text-align: center; }}
+            .header h1 {{ color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; }}
+            .content {{ padding: 30px; color: #333333; line-height: 1.6; font-size: 16px; }}
+            .footer {{ background-color: #1F2937; padding: 20px; text-align: center; color: #9CA3AF; font-size: 12px; }}
+            .highlight {{ color: #FF3B3B; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>LOOP BIDs</h1>
+            </div>
+            <div class="content">
+                <h2 style="color: #111; margin-top: 0;">{titulo}</h2>
+                {corpo_html}
+                {btn_html}
+            </div>
+            <div class="footer">
+                <p>Este é um e-mail automático. Por favor, não responda.</p>
+                <p>© 2026 Loop Logística - Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+
+def enviar_email_background(destinatarios, assunto, html_content, lista_anexos=None):
+    """Função interna para envio real (Roda em Thread)"""
+    try:
+        # Se for string única, transforma em lista
+        if isinstance(destinatarios, str):
+            destinatarios = [destinatarios]
+
+        msg = MIMEMultipart()
+        msg["From"] = EMAIL_USER
+        msg["Subject"] = assunto
+        # Envia como BCC para proteger a lista se for muitos, ou Para se for um só
+        if len(destinatarios) == 1:
+            msg["To"] = destinatarios[0]
+        else:
+            msg["To"] = EMAIL_USER  # Envia para si mesmo
+            msg["Bcc"] = ", ".join(destinatarios)  # Cópia oculta para todos
+
+        msg.attach(MIMEText(html_content, "html"))  # IMPORTANTE: 'html'
+
+        if lista_anexos:
+            from email.mime.application import MIMEApplication
+
+            for anexo_path in lista_anexos:
+                if os.path.exists(anexo_path):
+                    with open(anexo_path, "rb") as f:
+                        part = MIMEApplication(
+                            f.read(), Name=os.path.basename(anexo_path)
+                        )
+                    part["Content-Disposition"] = (
+                        f'attachment; filename="{os.path.basename(anexo_path)}"'
+                    )
+                    msg.attach(part)
+
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(EMAIL_USER, EMAIL_PASS)
+        server.send_message(msg)
+        server.quit()
+        print(f"📧 Email enviado para {len(destinatarios)} pessoas: {assunto}")
+
+        # Limpeza de anexos temporários após envio
+        if lista_anexos:
+            for f in lista_anexos:
+                if os.path.exists(f):
+                    os.remove(f)
+
+    except Exception as e:
+        print(f"❌ Erro envio email: {e}")
+
+
+def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
+    """Gerenciador central de notificações"""
+
+    # 1. Busca listas de emails atualizadas
+    try:
+        admins = [
+            u["email"]
+            for u in supabase.table("admins")
+            .select("email")
+            .neq("email", None)
+            .execute()
+            .data
+            if u.get("email")
+        ]
+        transp = [
+            u["email"]
+            for u in supabase.table("transportadoras")
+            .select("email")
+            .neq("email", None)
+            .execute()
+            .data
+            if u.get("email")
+        ]
+    except:
+        admins = []
+        transp = []
+
+    link_sistema = "https://loop-logistica.vercel.app"  # Ajuste para seu link real
+
+    # --- CENÁRIO A: NOVO BID LANÇADO (Todos recebem) ---
+    if tipo == "NOVO_BID":
+        assunto = f"🔥 Nova Oportunidade: {dados_bid['titulo']}"
+        html = get_html_template(
+            f"Novo BID Disponível: {dados_bid['codigo_unico']}",
+            f"""
+            <p>Um novo processo de cotação foi aberto na plataforma.</p>
+            <ul>
+                <li><b>Veículo:</b> {dados_bid['titulo']}</li>
+                <li><b>Origem:</b> {dados_bid['origem']}</li>
+                <li><b>Destino:</b> {dados_bid['destino']}</li>
+                <li><b>Categoria:</b> {dados_bid['categoria_veiculo']}</li>
+                <li><b>Qtd:</b> {dados_bid['quantidade_veiculos']}</li>
+            </ul>
+            <p>Acesse a plataforma agora para enviar sua proposta.</p>
+            """,
+            link_sistema,
+            "ACESSAR PAINEL",
+        )
+        # Envia para todos (Admins + Transportadores)
+        todos = list(set(admins + transp))
+        if todos:
+            threading.Thread(
+                target=enviar_email_background, args=(todos, assunto, html)
+            ).start()
+
+    # --- CENÁRIO B: APROVAÇÃO FINAL (Vencedor + Admins com Anexo) ---
+    elif tipo == "APROVACAO_FINAL":
+        # 1. Email para o Vencedor
+        if vencedor_dados and vencedor_dados.get("email"):
+            assunto_win = f"🏆 Você Venceu! BID {dados_bid['codigo_unico']}"
+            html_win = get_html_template(
+                "Parabéns! Sua proposta foi aceita.",
+                f"""
+                <p>Informamos que sua transportadora <b>{vencedor_dados['nome']}</b> foi a vencedora do processo.</p>
+                <p><b>BID:</b> {dados_bid['titulo']} ({dados_bid['codigo_unico']})</p>
+                <p>Nossa equipe entrará em contato em breve para os trâmites operacionais.</p>
+                """,
+                link_sistema,
+                "VER DETALHES",
+            )
+            threading.Thread(
+                target=enviar_email_background,
+                args=([vencedor_dados["email"]], assunto_win, html_win),
+            ).start()
+
+        # 2. Email para Admins (Com Auditoria)
+        if admins:
+            assunto_adm = f"✅ BID Finalizado/Auditado: {dados_bid['codigo_unico']}"
+            html_adm = get_html_template(
+                "Processo Finalizado e Aprovado",
+                f"""
+                <p>O BID <b>{dados_bid['titulo']}</b> foi aprovado pelo Master e finalizado.</p>
+                <p>Seguem em anexo os relatórios de auditoria e logs completos (PDF, CSV, JSON).</p>
+                <p><b>Vencedor:</b> {vencedor_dados['nome'] if vencedor_dados else 'N/A'}</p>
+                """,
+                link_sistema,
+                "ACESSAR DASHBOARD",
+            )
+            # A thread vai enviar e deletar os arquivos depois
+            threading.Thread(
+                target=enviar_email_background,
+                args=(admins, assunto_adm, html_adm, anexos),
+            ).start()
+
+    # --- CENÁRIO C: REPROVAÇÃO (Apenas Admins) ---
+    elif tipo == "REPROVACAO":
+        if admins:
+            assunto = f"⚠️ BID Reprovado/Retornado: {dados_bid['codigo_unico']}"
+            html = get_html_template(
+                "Processo Devolvido para Análise",
+                f"""
+                <p>O BID <b>{dados_bid['titulo']}</b> foi reprovado na etapa de validação Master.</p>
+                <p>Ele retornou para o status <b>EM ANÁLISE</b> para reavaliação ou cancelamento.</p>
+                """,
+                link_sistema,
+            )
+            threading.Thread(
+                target=enviar_email_background, args=(admins, assunto, html)
+            ).start()
+
+
+# Mantemos a função legada para compatibilidade se algo chamar ela, redirecionando pro novo template
+def enviar_credenciais(nome, email, usuario, senha, tipo="Novo Acesso"):
+    html = get_html_template(
+        f"Credenciais de Acesso: {tipo}",
+        f"""
+        <p>Olá, <b>{nome}</b>.</p>
+        <p>Seu acesso ao sistema Loop BIDs foi configurado.</p>
+        <div style="background:#eee; padding:15px; border-radius:5px; margin:15px 0;">
+            <b>Usuário:</b> {usuario}<br>
+            <b>Senha Provisória:</b> {senha}
+        </div>
+        <p>Recomendamos trocar sua senha no primeiro acesso.</p>
+        """,
+        "https://loop-logistica.vercel.app",
+        "FAZER LOGIN",
+    )
+    threading.Thread(
+        target=enviar_email_background, args=([email], "Acesso Loop BIDs", html)
+    ).start()
+
+
 @st.cache_resource
 def iniciar_robo_monitoramento():
     def job():
@@ -651,7 +879,9 @@ if st.session_state.user_type == "admin":
                 )
 
                 supabase.table("bids").insert(dados_save).execute()
-                st.success(f"BID {dados['codigo_unico']} Criado com Sucesso!")
+                st.success(f"{dados['codigo_unico']} Criado com Sucesso!")
+
+                notificar_usuarios("NOVO_BID", dados_bid=dados_save)
 
                 # Limpa sessão e reseta formulário (incrementando a chave)
                 st.session_state.dados_confirmacao_bid = None
@@ -1135,30 +1365,52 @@ if st.session_state.user_type == "admin":
                 # --- BOTÕES DE AÇÃO ---
                 col_btn_1, col_btn_2 = st.columns(2)
 
+                # --- BOTÃO DE APROVAR ---
                 if col_btn_1.button(
                     "APROVAR E FINALIZAR", key=f"ok_{bid['id']}", type="primary"
                 ):
                     stamp = get_audit_stamp(st.session_state.user_data["nome"])
 
-                    # 1. Atualiza Status
                     supabase.table("bids").update(
                         {"status": "FINALIZADO", "log_aprovacao": stamp}
                     ).eq("id", bid["id"]).execute()
 
-                    # 2. Gera PDF e Envia Email
+                    # Prepara dados para notificação
                     bid["log_aprovacao"] = stamp
-                    path_pdf = gerar_pdf_auditoria_completo(bid, lances, l_vence, {})
 
-                    enviar_email_final(
-                        EMAIL_USER,
-                        f"BID Finalizado: {bid['titulo']}",
-                        "Auditoria e Aprovação Master em anexo.",
-                        path_pdf,
+                    # 1. Gera Arquivos
+                    arquivos_audit = gerar_pdf_auditoria_completo(
+                        bid, lances, l_vence, {}
                     )
-                    st.success("BID Aprovado e Encerrado com Sucesso!")
+
+                    # 2. Busca dados do vencedor para mandar email pra ele
+                    dados_vencedor_email = None
+                    if l_vence:
+                        # Busca o email da transportadora vencedora na tabela de usuários
+                        resp_tr = (
+                            supabase.table("transportadoras")
+                            .select("email, nome")
+                            .eq("nome", l_vence["transportadora_nome"])
+                            .execute()
+                        )
+                        if resp_tr.data:
+                            dados_vencedor_email = resp_tr.data[0]
+
+                    # 3. Dispara Notificações (Auditoria Admins + Vencedor)
+                    notificar_usuarios(
+                        "APROVACAO_FINAL",
+                        dados_bid=bid,
+                        anexos=arquivos_audit,
+                        vencedor_dados=dados_vencedor_email,
+                    )
+
+                    st.success(
+                        "BID Aprovado! E-mails de notificação e auditoria disparados."
+                    )
                     sleep(2)
                     st.rerun()
 
+                # --- BOTÃO DE REPROVAR ---
                 if col_btn_2.button(
                     "REPROVAR (Voltar p/ Análise)", key=f"no_{bid['id']}"
                 ):
@@ -1169,7 +1421,11 @@ if st.session_state.user_type == "admin":
                             "log_selecao": None,
                         }
                     ).eq("id", bid["id"]).execute()
-                    st.warning("BID devolvido para a mesa de Análise.")
+
+                    # Notifica Admins que voltou
+                    notificar_usuarios("REPROVACAO", dados_bid=bid)
+
+                    st.warning("BID devolvido. Admins notificados.")
                     sleep(2)
                     st.rerun()
 
