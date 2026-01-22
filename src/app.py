@@ -1154,7 +1154,7 @@ if st.session_state.user_type == "admin":
                 else:
                     c2.warning("BID finalizado sem lances (Deserto).")
 
-    # 4. TELA: GESTÃO DE ACESSOS (ATUALIZADO)
+    # 4. TELA: GESTÃO DE ACESSOS (CORRIGIDA)
     elif menu_admin == "Gestão de Acessos":
         st.markdown("### Gestão de Usuários e Acessos")
 
@@ -1162,57 +1162,49 @@ if st.session_state.user_type == "admin":
         user_role = st.session_state.user_data.get("role", "standard")
         is_master = user_role == "master"
 
-        # Lógica de Abas condicional
+        # Define as abas
         if is_master:
             tab_admins, tab_transp = st.tabs(["Administradores", "Transportadoras"])
         else:
-            # Standard vê apenas aba de transportadoras
             (tab_transp,) = st.tabs(["Transportadoras"])
             tab_admins = None
 
         # --- ABA 1: ADMINISTRADORES (SOMENTE MASTER) ---
         if is_master and tab_admins:
             with tab_admins:
-                st.info("Cadastro de equipe interna. A senha será enviada por e-mail.")
+                st.info("Cadastro de equipe interna.")
 
+                # [FIXO] Formulário sempre visível no topo
                 with st.expander("Novo Administrador", expanded=False):
                     with st.form("novo_admin_form"):
                         c1, c2 = st.columns(2)
-                        n_nome = c1.text_input("Nome Completo")
-                        n_email = c2.text_input("E-mail Corporativo")
-
+                        n_nome = c1.text_input("Nome")
+                        n_email = c2.text_input("Email")
                         c3, c4 = st.columns(2)
-                        n_user = c3.text_input("Usuário (Login)")
+                        n_user = c3.text_input("Login")
                         n_role = c4.selectbox("Nível", ["standard", "master"])
 
-                        if st.form_submit_button("CRIAR ADMIN"):
-                            if n_nome and n_email and n_user:
-                                senha_temp = gerar_senha_aleatoria()
+                        if st.form_submit_button("CRIAR"):
+                            if n_nome and n_user:
+                                s_temp = gerar_senha_forte()
                                 try:
                                     supabase.table("admins").insert(
                                         {
                                             "nome": n_nome,
                                             "usuario": n_user,
                                             "email": n_email,
-                                            "senha": senha_temp,
+                                            "senha": s_temp,
                                             "role": n_role,
                                         }
                                     ).execute()
-                                    enviar_credenciais(
-                                        n_nome, n_email, n_user, senha_temp
-                                    )
-                                    st.success(
-                                        f"Criado! Credenciais enviadas para {n_email}"
-                                    )
+                                    enviar_credenciais(n_nome, n_email, n_user, s_temp)
+                                    st.success("Criado!")
                                     sleep(1)
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Erro: {e}")
-                            else:
-                                st.warning("Preencha todos os campos.")
 
                 st.markdown("#### Equipe Ativa")
-                # Tenta listar admins (tratamento de erro caso coluna created_at não exista em bases antigas)
                 try:
                     adms = (
                         supabase.table("admins")
@@ -1222,52 +1214,87 @@ if st.session_state.user_type == "admin":
                         .data
                     )
                 except:
-                    adms = supabase.table("admins").select("*").execute().data
+                    adms = []
 
-                for a in adms:
-                    with st.container(border=True):
-                        c1, c2, c3 = st.columns([3, 2, 2])
-                        c1.markdown(
-                            f"**{a['nome']}**<br><span style='font-size:0.8rem'>{a.get('email','Sem Email')}</span>",
-                            unsafe_allow_html=True,
-                        )
-                        role_color = (
-                            "#FF3B3B" if a.get("role") == "master" else "#6B7280"
-                        )
-                        c2.markdown(
-                            f"<span style='color:{role_color};font-weight:bold'>{a.get('role','standard').upper()}</span>",
-                            unsafe_allow_html=True,
-                        )
+                if not adms:
+                    st.warning("Nenhum administrador encontrado.")
+                else:
+                    for a in adms:
+                        with st.container(border=True):
+                            c1, c2, c3 = st.columns([3, 2, 2])
+                            c1.markdown(
+                                f"**{a['nome']}**<br><span style='font-size:0.8rem'>{a.get('email','Sem Email')}</span>",
+                                unsafe_allow_html=True,
+                            )
+                            role_txt = a.get("role", "standard").upper()
+                            c2.caption(f"Role: {role_txt}")
+                            if a["usuario"] != st.session_state.user_data["usuario"]:
+                                if c3.button("🗑️ Remover", key=f"da_{a['id']}"):
+                                    supabase.table("admins").delete().eq(
+                                        "id", a["id"]
+                                    ).execute()
+                                    st.rerun()
 
-                        # Ações (Reset e Delete)
-                        if a["usuario"] != st.session_state.user_data["usuario"]:
-                            c_reset, c_del = c3.columns(2)
-                            if c_reset.button(
-                                "🔄 Senha",
-                                key=f"rst_a_{a['id']}",
-                                help="Gerar nova senha e enviar por email",
-                            ):
-                                nova_s = gerar_senha_aleatoria()
-                                supabase.table("admins").update({"senha": nova_s}).eq(
-                                    "id", a["id"]
+        # --- ABA 2: TRANSPORTADORAS (TODOS VEEM) ---
+        # Este bloco 'with' deve estar alinhado com o 'if is_master' acima, e não dentro dele
+        with tab_transp:
+            st.info("Gestão de parceiros.")
+
+            # [FIXO] Formulário sempre visível no topo (FORA de qualquer if/for de dados)
+            with st.expander("Nova Transportadora", expanded=False):
+                with st.form("nova_transp_form"):
+                    t_nome = st.text_input("Razão Social")
+                    t_email = st.text_input("Email")
+                    t_user = st.text_input("Login")
+
+                    if st.form_submit_button("CRIAR"):
+                        if t_nome and t_user:
+                            s_temp = gerar_senha_forte()
+                            try:
+                                supabase.table("transportadoras").insert(
+                                    {
+                                        "nome": t_nome,
+                                        "usuario": t_user,
+                                        "email": t_email,
+                                        "senha": s_temp,
+                                    }
                                 ).execute()
-                                if a.get("email"):
-                                    enviar_credenciais(
-                                        a["nome"],
-                                        a["email"],
-                                        a["usuario"],
-                                        nova_s,
-                                        "Reset de Senha",
-                                    )
-                                    st.toast(f"Nova senha enviada para {a['email']}")
-                                else:
-                                    st.error("Usuário sem email cadastrado!")
-
-                            if c_del.button("🗑️", key=f"del_a_{a['id']}"):
-                                supabase.table("admins").delete().eq(
-                                    "id", a["id"]
-                                ).execute()
+                                enviar_credenciais(t_nome, t_email, t_user, s_temp)
+                                st.success("Criado!")
+                                sleep(1)
                                 st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro: {e}")
+
+            st.markdown("#### Parceiros")
+
+            # Busca os dados
+            try:
+                trs = (
+                    supabase.table("transportadoras")
+                    .select("*")
+                    .order("nome")
+                    .execute()
+                    .data
+                )
+            except:
+                trs = []
+
+            # Lista os dados (se houver)
+            if not trs:
+                st.info(
+                    "Nenhuma transportadora cadastrada. Use o botão acima para adicionar."
+                )
+            else:
+                for t in trs:
+                    with st.container(border=True):
+                        c1, c2 = st.columns([4, 1])
+                        c1.write(f"**{t['nome']}** ({t.get('email','---')})")
+                        if c2.button("🗑️", key=f"dt_{t['id']}"):
+                            supabase.table("transportadoras").delete().eq(
+                                "id", t["id"]
+                            ).execute()
+                            st.rerun()
 
     # 4. TELA: APROVAÇÃO (SOMENTE MASTER) - COM RANKINGS
     elif menu_admin == "Aprovação":
