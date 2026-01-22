@@ -654,7 +654,8 @@ with st.sidebar:
             "Gestão de Acessos",
         ]
         if st.session_state.get("user_role") == "master":
-            opcoes.append("Aprovação")  # <--- NOVO
+            opcoes.append("Aprovação")
+        opcoes.append("Minha Conta")
         menu_admin = st.radio("Navegação", opcoes, label_visibility="collapsed")
     else:
         st.markdown("---")
@@ -1364,6 +1365,66 @@ if st.session_state.user_type == "admin":
                     st.warning("BID devolvido. Admins notificados.")
                     sleep(2)
                     st.rerun()
+
+    elif menu_admin == "Minha Conta":
+        st.markdown("### Meus Dados de Acesso")
+        st.info("Mantenha sua senha segura e atualizada.")
+
+        user_id = st.session_state.user_data["id"]
+
+        try:
+            meus_dados = (
+                supabase.table("admins").select("*").eq("id", user_id).execute().data[0]
+            )
+
+            with st.container(border=True):
+                with st.form("update_dados_admin_proprio"):
+                    col_info1, col_info2 = st.columns(2)
+                    novo_email = col_info1.text_input(
+                        "E-mail para Notificações", value=meus_dados.get("email", "")
+                    )
+                    st.caption(f"Usuário de Login: {meus_dados['usuario']}")
+
+                    st.markdown("---")
+                    st.markdown("**Alterar Senha (Opcional)**")
+
+                    c_p1, c_p2 = st.columns(2)
+                    nova_senha = c_p1.text_input(
+                        "Nova Senha",
+                        type="password",
+                        placeholder="Deixe em branco para manter",
+                    )
+                    c_senha = c_p2.text_input("Confirme a Nova Senha", type="password")
+
+                    if st.form_submit_button("SALVAR ALTERAÇÕES", type="primary"):
+                        payload = {"email": novo_email}
+                        msg_extra = ""
+
+                        if nova_senha:
+                            if nova_senha != c_senha:
+                                st.error("As senhas não conferem!")
+                                st.stop()
+
+                            is_valid, msg = validar_senha_input(nova_senha)
+                            if not is_valid:
+                                st.error(f"Senha fraca: {msg}")
+                                st.stop()
+
+                            payload["senha"] = nova_senha
+                            msg_extra = " e Senha"
+
+                        supabase.table("admins").update(payload).eq(
+                            "id", user_id
+                        ).execute()
+
+                        st.session_state.user_data["email"] = novo_email
+
+                        st.success(f"Perfil{msg_extra} atualizado com sucesso!")
+                        sleep(1)
+                        st.rerun()
+
+        except Exception as e:
+            st.error(f"Erro ao carregar perfil: {e}")
 
 # ÁREA PRESTADOR
 else:
