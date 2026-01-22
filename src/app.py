@@ -13,14 +13,11 @@ import threading
 import random
 import string
 
-# --- CONFIGURAÇÃO INICIAL ---
 st.set_page_config(page_title="BIDs", layout="wide")
 load_dotenv()
 
 
-# --- CONEXÃO SUPABASE E EMAIL (ROBUSTA) ---
 def get_secret(key):
-    """Busca segredo primeiro no Streamlit Cloud, depois no .env local"""
     if key in st.secrets:
         return st.secrets[key]
     return os.getenv(key)
@@ -45,19 +42,15 @@ supabase = init_connection()
 
 
 def gerar_codigo_bid():
-    """Gera código longo e único: BID-202601-XK92MZ4P"""
     prefixo = datetime.now().strftime("%Y%m")
-    # 8 Caracteres aleatórios maiúsculos/números
     sufixo = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
     return f"BID-{prefixo}-{sufixo}"
 
 
 def gerar_senha_forte(tamanho=10):
-    """Gera senha garantindo requisitos mínimos"""
     if tamanho < 8:
         tamanho = 8
 
-    # Garante pelo menos 1 de cada categoria
     senha = [
         random.choice(string.ascii_uppercase),
         random.choice(string.ascii_lowercase),
@@ -65,17 +58,13 @@ def gerar_senha_forte(tamanho=10):
         random.choice("@$!%*?&"),
     ]
 
-    # Preenche o resto
     todos_caracteres = string.ascii_letters + string.digits + "@$!%*?&"
     senha += random.choices(todos_caracteres, k=tamanho - 4)
-
-    # Embaralha
     random.shuffle(senha)
     return "".join(senha)
 
 
 def validar_senha_input(senha):
-    """Valida se a senha digitada pelo usuário cumpre os requisitos"""
     if len(senha) < 8:
         return False, "Mínimo 8 caracteres."
     if not re.search(r"[A-Z]", senha):
@@ -88,7 +77,6 @@ def validar_senha_input(senha):
 
 
 def get_audit_stamp(usuario_nome):
-    """Gera o carimbo de auditoria: Nome - DD/MM/YYYY HH:MM:SS"""
     agora = datetime.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M:%S")
     return f"{usuario_nome} em {agora}"
 
@@ -116,13 +104,10 @@ FUSO_BR = timezone(timedelta(hours=-3))
 
 
 def formatar_data_br(data_iso):
-    """Converte string ISO do Banco (UTC) para Brasília formatado"""
     if not data_iso:
         return "Data Indefinida"
     try:
-        # O replace garante que o Python entenda que o 'Z' é UTC
         dt_utc = datetime.fromisoformat(data_iso.replace("Z", "+00:00"))
-        # Converte para o fuso BR
         dt_br = dt_utc.astimezone(FUSO_BR)
         return dt_br.strftime("%d/%m/%Y às %H:%M")
     except:
@@ -132,7 +117,6 @@ def formatar_data_br(data_iso):
 def get_html_template(
     titulo, corpo_html, call_to_action_url=None, call_to_action_text="ACESSAR SISTEMA"
 ):
-    """Gera um template HTML padronizado com a identidade visual da Loop"""
     btn_html = ""
     if call_to_action_url:
         btn_html = f"""
@@ -158,7 +142,7 @@ def get_html_template(
     <body>
         <div class="container">
             <div class="header">
-                <h1>LOOP BIDs</h1>
+                <h1>BIDs</h1>
             </div>
             <div class="content">
                 <h2 style="color: #111; margin-top: 0;">{titulo}</h2>
@@ -167,7 +151,7 @@ def get_html_template(
             </div>
             <div class="footer">
                 <p>Este é um e-mail automático. Por favor, não responda.</p>
-                <p>© 2026 Loop Logística - Todos os direitos reservados.</p>
+                <p>© 2026 VCarmoLima - Todos os direitos reservados.</p>
             </div>
         </div>
     </body>
@@ -178,12 +162,9 @@ def get_html_template(
 def enviar_email_background(
     destinatarios, assunto, html_content, lista_anexos=None, cc_list=None
 ):
-    """Função interna para envio real (Roda em Thread)"""
     try:
-        # Garante que destinatarios seja lista
         if isinstance(destinatarios, str):
             destinatarios = [destinatarios]
-        # Garante que cc_list seja lista
         if cc_list and isinstance(cc_list, str):
             cc_list = [cc_list]
 
@@ -191,16 +172,12 @@ def enviar_email_background(
         msg["From"] = EMAIL_USER
         msg["Subject"] = assunto
 
-        # LÓGICA DE DESTINATÁRIOS
-        # Cenário A: Envio em Massa (ex: Novo BID para todos) -> Usa BCC para privacidade
         if len(destinatarios) > 1:
             msg["To"] = EMAIL_USER
             msg["Bcc"] = ", ".join(destinatarios)
-            # Se tiver CC em massa (raro), adiciona
             if cc_list:
                 msg["Cc"] = ", ".join(cc_list)
 
-        # Cenário B: Envio Direto (ex: Vencedor) -> Usa To + CC
         else:
             msg["To"] = destinatarios[0]
             if cc_list:
@@ -225,25 +202,20 @@ def enviar_email_background(
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
-        # send_message extrai os destinatários (To, Cc, Bcc) automaticamente dos headers
         server.send_message(msg)
         server.quit()
-        print(f"📧 Email enviado para {destinatarios} (CC: {cc_list})")
+        print(f"Email enviado para {destinatarios} (CC: {cc_list})")
 
-        # Limpeza
         if lista_anexos:
             for f in lista_anexos:
                 if os.path.exists(f):
                     os.remove(f)
 
     except Exception as e:
-        print(f"❌ Erro envio email: {e}")
+        print(f"Erro envio email: {e}")
 
 
 def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
-    """Gerenciador central de notificações"""
-
-    # 1. Busca listas de emails atualizadas
     try:
         admins = [
             u["email"]
@@ -267,11 +239,9 @@ def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
         admins = []
         transp = []
 
-    link_sistema = "https://loop-logistica.vercel.app"  # Ajuste para seu link real
-
-    # --- CENÁRIO A: NOVO BID LANÇADO (Todos recebem) ---
+    link_sistema = "https://bidlogistico.streamlit.app"
     if tipo == "NOVO_BID":
-        assunto = f"🔥 Nova Oportunidade: {dados_bid['titulo']}"
+        assunto = f"Nova Oportunidade: {dados_bid['titulo']}"
         html = get_html_template(
             f"Novo BID Disponível: {dados_bid['codigo_unico']}",
             f"""
@@ -288,18 +258,15 @@ def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
             link_sistema,
             "ACESSAR PAINEL",
         )
-        # Envia para todos (Admins + Transportadores)
         todos = list(set(admins + transp))
         if todos:
             threading.Thread(
                 target=enviar_email_background, args=(todos, assunto, html)
             ).start()
 
-    # --- CENÁRIO B: APROVAÇÃO FINAL (Vencedor + Admins com Anexo) ---
     elif tipo == "APROVACAO_FINAL":
-        # 1. Email para o Vencedor (Admins em Cópia CC)
         if vencedor_dados and vencedor_dados.get("email"):
-            assunto_win = f"🏆 Você Venceu! BID {dados_bid['codigo_unico']}"
+            assunto_win = f"Você Venceu! BID {dados_bid['codigo_unico']}"
             html_win = get_html_template(
                 "Parabéns! Sua proposta foi aceita.",
                 f"""
@@ -311,16 +278,13 @@ def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
                 "VER DETALHES",
             )
 
-            # AQUI ESTÁ A MÁGICA: Passamos admins no parâmetro cc_list (5º argumento)
             threading.Thread(
                 target=enviar_email_background,
                 args=([vencedor_dados["email"]], assunto_win, html_win, None, admins),
             ).start()
 
-        # 2. Email de Auditoria (Apenas para Admins, com arquivos sensíveis)
-        # Mantemos separado pois o vencedor NÃO pode receber os arquivos de log com lances dos concorrentes
         if admins:
-            assunto_adm = f"✅ BID Auditado: {dados_bid['codigo_unico']}"
+            assunto_adm = f"BID Auditado: {dados_bid['codigo_unico']}"
             html_adm = get_html_template(
                 "Auditoria de Processo Finalizado",
                 f"""
@@ -335,10 +299,9 @@ def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
                 args=(admins, assunto_adm, html_adm, anexos),
             ).start()
 
-    # --- CENÁRIO C: REPROVAÇÃO (Apenas Admins) ---
     elif tipo == "REPROVACAO":
         if admins:
-            assunto = f"⚠️ BID Reprovado/Retornado: {dados_bid['codigo_unico']}"
+            assunto = f"BID Reprovado/Retornado: {dados_bid['codigo_unico']}"
             html = get_html_template(
                 "Processo Devolvido para Análise",
                 f"""
@@ -352,24 +315,24 @@ def notificar_usuarios(tipo, dados_bid=None, anexos=None, vencedor_dados=None):
             ).start()
 
 
-# Mantemos a função legada para compatibilidade se algo chamar ela, redirecionando pro novo template
 def enviar_credenciais(nome, email, usuario, senha, tipo="Novo Acesso"):
     html = get_html_template(
         f"Credenciais de Acesso: {tipo}",
         f"""
         <p>Olá, <b>{nome}</b>.</p>
-        <p>Seu acesso ao sistema Loop BIDs foi configurado.</p>
+        <p>Seu acesso ao sistema de BIDs foi configurado.</p>
         <div style="background:#eee; padding:15px; border-radius:5px; margin:15px 0;">
             <b>Usuário:</b> {usuario}<br>
             <b>Senha Provisória:</b> {senha}
         </div>
         <p>Recomendamos trocar sua senha no primeiro acesso.</p>
         """,
-        "https://loop-logistica.vercel.app",
+        "https://bidlogistico.streamlit.app",
         "FAZER LOGIN",
     )
     threading.Thread(
-        target=enviar_email_background, args=([email], "Acesso Loop BIDs", html)
+        target=enviar_email_background,
+        args=([email], "Acesso ao sistema de BIDs", html),
     ).start()
 
 
@@ -379,11 +342,8 @@ def iniciar_robo_monitoramento():
         print("[SaaS] Worker Iniciado em Background...")
         while True:
             try:
-                # Usa as credenciais globais para criar uma conexão isolada para o robô
-                # Isso evita conflito com a navegação do usuário
                 client_worker = create_client(url, key)
 
-                # Lógica original do worker.py
                 resp = (
                     client_worker.table("bids")
                     .select("*")
@@ -395,7 +355,6 @@ def iniciar_robo_monitoramento():
                 for bid in resp.data:
                     prazo_str = bid.get("prazo_limite")
                     if prazo_str:
-                        # Tratamento de data e fuso
                         clean_str = prazo_str.replace("Z", "+00:00")
                         prazo_dt = datetime.fromisoformat(clean_str)
 
@@ -405,20 +364,17 @@ def iniciar_robo_monitoramento():
                                 {"status": "EM_ANALISE"}
                             ).eq("id", bid["id"]).execute()
 
-                sleep(10)  # Verifica a cada 10 segundos
+                sleep(10)
             except Exception as e:
                 print(f"Erro no Worker: {e}")
                 sleep(10)
 
-    # Inicia a thread em modo 'daemon' (não trava o site)
     t = threading.Thread(target=job, daemon=True)
     t.start()
 
 
-# Liga o robô
 iniciar_robo_monitoramento()
 
-# --- SESSÃO ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "user_type" not in st.session_state:
@@ -436,7 +392,6 @@ def logout():
     st.rerun()
 
 
-# --- FUNÇÕES AUXILIARES ---
 def enviar_email_final(destinatario, assunto, corpo, anexo_path=None):
     try:
         msg = MIMEMultipart()
@@ -464,7 +419,6 @@ def enviar_email_final(destinatario, assunto, corpo, anexo_path=None):
         return False
 
 
-# --- CSS PREMIUM ---
 st.markdown(
     """
     <style>
@@ -551,7 +505,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- LOGIN ---
 if not st.session_state.logged_in:
     col_vazia_esq, col_centro, col_vazia_dir = st.columns([1.2, 1, 1.2])
     with col_centro:
@@ -559,13 +512,9 @@ if not st.session_state.logged_in:
         with st.container(border=True):
             col_l1, col_logo, col_l2 = st.columns([1, 2, 1])
             with col_logo:
-                # -----------------------------------------------------------
-                # SUBSTITUIÇÃO: Lógica do Logo Genérico
-                # -----------------------------------------------------------
                 if os.path.exists("image/logo.webp"):
                     st.image("image/logo.webp", use_container_width=True)
                 else:
-                    # Renderiza um quadrado cinza escrito LOGO se não tiver imagem
                     st.markdown(
                         """
                         <div style="
@@ -641,30 +590,21 @@ if not st.session_state.logged_in:
                     st.session_state.login_view = "provider"
                     st.rerun()
 
-        # --- AVISO DE COPYRIGHT REINSERIDO ---
         st.markdown(
-            "<div style='text-align: center; color: #9CA3AF; font-size: 0.75rem; margin-top: 40px;'>© 2026 - VCarmoLima<br><br><br><br>Precisa de ajuda?<br>viniciuscarmo.contato@gmail.com</div>",
+            "<div style='text-align: center; color: #9CA3AF; font-size: 0.75rem; margin-top: 40px;'>© 2026 VCarmoLima - Todos os direitos reservados.<br><br><br><br>Precisa de ajuda?<br>viniciuscarmo.contato@gmail.com</div>",
             unsafe_allow_html=True,
         )
 
     st.stop()
 
-# --- HEADER SUPERIOR (MANTIDO) ---
 st.markdown(
     """<div class="top-bar"><div class="top-title">BID Logístico</div></div>""",
     unsafe_allow_html=True,
 )
-
-# --- BARRA LATERAL (SIDEBAR ATUALIZADA) ---
 with st.sidebar:
-    # 1. LOGO
-    # -----------------------------------------------------------
-    # SUBSTITUIÇÃO: Lógica do Logo Genérico
-    # -----------------------------------------------------------
     if os.path.exists("image/logo.webp"):
         st.image("image/logo.webp", use_container_width=True)
     else:
-        # Renderiza um quadrado cinza escrito LOGO se não tiver imagem
         st.markdown(
             """
             <div style="
@@ -683,7 +623,6 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-    # 2. BOAS-VINDAS (PERSONALIZADO: PRETO, NEGRITO, MAIOR)
     st.markdown(
         f"""
         <div style="margin-top: 20px; margin-bottom: 10px;">
@@ -696,7 +635,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # 3. MENU DE NAVEGAÇÃO
     if st.session_state.user_type == "admin":
         st.markdown("---")
 
@@ -711,7 +649,6 @@ with st.sidebar:
             opcoes.append("Aprovação")  # <--- NOVO
         menu_admin = st.radio("Navegação", opcoes, label_visibility="collapsed")
     else:
-        # TRANSPORTADOR AGORA TEM MENU
         st.markdown("---")
 
         menu_provider = st.radio(
@@ -720,40 +657,27 @@ with st.sidebar:
             label_visibility="collapsed",
         )
 
-        # 4. BOTÃO DE LOGOUT (NO FINAL)
-    # Adiciona um espaço flexível antes do logout para separar bem
     st.markdown("", unsafe_allow_html=True)
     st.markdown("---")
     if st.button("Sair / Logout", type="secondary", use_container_width=True):
         logout()
 
-# ==============================================================================
-# LÓGICA DE PÁGINAS (INTEGRAÇÃO COM O MENU ACIMA)
-# ==============================================================================
 
-# ==============================================================================
 # ÁREA ADMIN
-# ==============================================================================
 if st.session_state.user_type == "admin":
 
-    # 1. TELA: CRIAR BID
     if menu_admin == "Novo BID":
         st.markdown("### Cadastro de Nova Demanda")
         st.markdown("Preencha os dados abaixo e revise antes de lançar.")
 
-        # Inicializa variáveis de estado
         if "dados_confirmacao_bid" not in st.session_state:
             st.session_state.dados_confirmacao_bid = None
 
-        # Controle para limpar o formulário apenas APÓS o sucesso
         if "form_key_bid" not in st.session_state:
             st.session_state.form_key_bid = 0
 
-        # Se NÃO estiver confirmando, mostra o formulário
         if not st.session_state.dados_confirmacao_bid:
             with st.container(border=True):
-                # REMOVIDO clear_on_submit=True para evitar bugs
-                # ADICIONADO key dinâmica para limpar manualmente depois
                 with st.form(
                     key=f"form_bid_{st.session_state.form_key_bid}",
                     clear_on_submit=False,
@@ -814,7 +738,6 @@ if st.session_state.user_type == "admin":
                         if not titulo:
                             st.error("⚠️ O campo 'Modelo / Versão' é obrigatório.")
                         else:
-                            # Combinar Data e Hora
                             data_completa = datetime.combine(data_limite, hora_limite)
                             fuso_br = timezone(timedelta(hours=-3))
                             data_com_tz = data_completa.replace(tzinfo=fuso_br)
@@ -837,7 +760,6 @@ if st.session_state.user_type == "admin":
                                 except Exception as e:
                                     st.warning(f"Erro imagem: {e}")
 
-                            # Salva na sessão para confirmação
                             st.session_state.dados_confirmacao_bid = {
                                 "codigo_unico": cod_unico,
                                 "categoria_veiculo": cat,
@@ -860,7 +782,6 @@ if st.session_state.user_type == "admin":
                             }
                             st.rerun()
 
-        # TELA DE CONFIRMAÇÃO (FORA DO FORMULÁRIO)
         else:
             dados = st.session_state.dados_confirmacao_bid
 
@@ -880,11 +801,11 @@ if st.session_state.user_type == "admin":
                         f"**Placa:** {dados['placa']} | **Qtd:** {dados['quantidade_veiculos']}"
                     )
                     st.divider()
-                    st.markdown(f"📍 **Origem:** {dados['origem']}")
-                    st.markdown(f"🏁 **Destino:** {dados['destino']}")
+                    st.markdown(f"**Origem:** {dados['origem']}")
+                    st.markdown(f"**Destino:** {dados['destino']}")
                     st.divider()
                     st.markdown(
-                        f"🕒 **Encerramento:** <span style='color:red; font-weight:bold'>{dados['display_prazo']}</span>",
+                        f"**Encerramento:** <span style='color:red; font-weight:bold'>{dados['display_prazo']}</span>",
                         unsafe_allow_html=True,
                     )
 
@@ -893,11 +814,9 @@ if st.session_state.user_type == "admin":
             if col_conf_1.button(
                 "CONFIRMAR E LANÇAR", type="primary", use_container_width=True
             ):
-                # ... (dentro do botão CONFIRMAR E LANÇAR do menu Novo BID)
                 dados_save = dados.copy()
                 del dados_save["display_prazo"]
 
-                # ADICIONADO: Log de quem criou
                 dados_save["log_criacao"] = get_audit_stamp(
                     st.session_state.user_data["nome"]
                 )
@@ -907,7 +826,6 @@ if st.session_state.user_type == "admin":
 
                 notificar_usuarios("NOVO_BID", dados_bid=dados_save)
 
-                # Limpa sessão e reseta formulário (incrementando a chave)
                 st.session_state.dados_confirmacao_bid = None
                 st.session_state.form_key_bid += 1
                 sleep(2)
@@ -917,7 +835,6 @@ if st.session_state.user_type == "admin":
                 st.session_state.dados_confirmacao_bid = None
                 st.rerun()
 
-    # 2. TELA: MONITORAMENTO
     elif menu_admin == "Monitoramento":
         c_head1, c_head2 = st.columns([3, 1])
         c_head1.markdown("### Painel de Controle")
@@ -946,13 +863,12 @@ if st.session_state.user_type == "admin":
                     "ENCERRAR AGORA", key=f"close_{bid['id']}", type="primary"
                 ):
                     ontem = datetime.now(timezone.utc) - timedelta(days=1)
-                    # ... (dentro do menu Monitoramento, botão ENCERRAR AGORA)
                     supabase.table("bids").update(
                         {
                             "prazo_limite": ontem.isoformat(),
                             "log_encerramento": get_audit_stamp(
                                 st.session_state.user_data["nome"]
-                            ),  # NOVO
+                            ),
                         }
                     ).eq("id", bid["id"]).execute()
                     st.toast("Encerrando...")
@@ -987,7 +903,6 @@ if st.session_state.user_type == "admin":
                 else:
                     st.warning("Aguardando lances...")
 
-    # 3. TELA: ANÁLISE
     elif menu_admin == "Análise":
         st.markdown("### Homologação de BIDs")
 
@@ -1018,7 +933,6 @@ if st.session_state.user_type == "admin":
                 else:
                     df = pd.DataFrame(lances)
 
-                    # Rankings
                     rank_preco = df.sort_values(by="valor", ascending=True).to_dict(
                         "records"
                     )
@@ -1070,13 +984,10 @@ if st.session_state.user_type == "admin":
                     )
                     vencedor_id = opcoes[escolha]
 
-                    # ... (dentro do menu Análise)
                     if st.button(
                         "SELECIONAR VENCEDOR", key=f"win_{bid['id']}", type="primary"
                     ):
                         stamp = get_audit_stamp(st.session_state.user_data["nome"])
-
-                        # Atualiza para status intermediário
                         supabase.table("bids").update(
                             {
                                 "status": "AGUARDANDO_APROVACAO",
@@ -1091,11 +1002,9 @@ if st.session_state.user_type == "admin":
                         sleep(2)
                         st.rerun()
 
-    # 5. TELA: HISTÓRICO (ADMIN)
     elif menu_admin == "Histórico":
         st.markdown("### Histórico de BIDs Finalizados")
 
-        # Busca apenas finalizados
         bids_hist = (
             supabase.table("bids")
             .select("*")
@@ -1109,10 +1018,8 @@ if st.session_state.user_type == "admin":
             st.info("Nenhum histórico disponível.")
 
         for bid in bids_hist:
-            # Identificação visual do status/vencedor
             vencedor_txt = "Sem Vencedor"
             if bid.get("lance_vencedor_id"):
-                # Busca nome do vencedor
                 v_res = (
                     supabase.table("lances")
                     .select("transportadora_nome, valor")
@@ -1121,7 +1028,7 @@ if st.session_state.user_type == "admin":
                     .data
                 )
                 if v_res:
-                    vencedor_txt = f"🏆 {v_res[0]['transportadora_nome']} (R$ {v_res[0]['valor']:,.2f})"
+                    vencedor_txt = f"{v_res[0]['transportadora_nome']} (R$ {v_res[0]['valor']:,.2f})"
 
             with st.expander(
                 f"{bid.get('codigo_unico','---')} | {bid['titulo']} | {vencedor_txt}"
@@ -1131,7 +1038,6 @@ if st.session_state.user_type == "admin":
                 c1.markdown(f"**Origem:** {bid['origem']}")
                 c1.markdown(f"**Destino:** {bid['destino']}")
 
-                # Busca todos os lances para recriar o ranking da época
                 lances_hist = (
                     supabase.table("lances")
                     .select("*")
@@ -1142,7 +1048,6 @@ if st.session_state.user_type == "admin":
 
                 if lances_hist:
                     df = pd.DataFrame(lances_hist)
-                    # Recalcula Score para visualização
                     min_p = df["valor"].min()
                     min_d = df["prazo_dias"].min()
                     df["score"] = (min_p / df["valor"]) * 70 + (
@@ -1162,27 +1067,21 @@ if st.session_state.user_type == "admin":
                 else:
                     c2.warning("BID finalizado sem lances (Deserto).")
 
-    # 4. TELA: GESTÃO DE ACESSOS (CORRIGIDA)
     elif menu_admin == "Gestão de Acessos":
         st.markdown("### Gestão de Usuários e Acessos")
 
-        # Verifica nível de acesso
         user_role = st.session_state.user_data.get("role", "standard")
         is_master = user_role == "master"
 
-        # Define as abas
         if is_master:
             tab_admins, tab_transp = st.tabs(["Administradores", "Transportadoras"])
         else:
             (tab_transp,) = st.tabs(["Transportadoras"])
             tab_admins = None
 
-        # --- ABA 1: ADMINISTRADORES (SOMENTE MASTER) ---
         if is_master and tab_admins:
             with tab_admins:
                 st.info("Cadastro de equipe interna.")
-
-                # [FIXO] Formulário sempre visível no topo
                 with st.expander("Novo Administrador", expanded=False):
                     with st.form("novo_admin_form"):
                         c1, c2 = st.columns(2)
@@ -1243,12 +1142,9 @@ if st.session_state.user_type == "admin":
                                     ).execute()
                                     st.rerun()
 
-        # --- ABA 2: TRANSPORTADORAS (TODOS VEEM) ---
-        # Este bloco 'with' deve estar alinhado com o 'if is_master' acima, e não dentro dele
         with tab_transp:
             st.info("Gestão de parceiros.")
 
-            # [FIXO] Formulário sempre visível no topo (FORA de qualquer if/for de dados)
             with st.expander("Nova Transportadora", expanded=False):
                 with st.form("nova_transp_form"):
                     t_nome = st.text_input("Razão Social")
@@ -1276,7 +1172,6 @@ if st.session_state.user_type == "admin":
 
             st.markdown("#### Parceiros")
 
-            # Busca os dados
             try:
                 trs = (
                     supabase.table("transportadoras")
@@ -1288,7 +1183,6 @@ if st.session_state.user_type == "admin":
             except:
                 trs = []
 
-            # Lista os dados (se houver)
             if not trs:
                 st.info(
                     "Nenhuma transportadora cadastrada. Use o botão acima para adicionar."
@@ -1304,9 +1198,7 @@ if st.session_state.user_type == "admin":
                             ).execute()
                             st.rerun()
 
-    # 4. TELA: APROVAÇÃO (SOMENTE MASTER) - COM RANKINGS
     elif menu_admin == "Aprovação":
-        # Bloqueio de segurança
         if st.session_state.get("user_role") != "master":
             st.error("Acesso restrito a Master Admins.")
             st.stop()
@@ -1325,11 +1217,9 @@ if st.session_state.user_type == "admin":
 
         for bid in bids_aprov:
             with st.container(border=True):
-                # Cabeçalho do Card
                 st.markdown(f"### {bid['titulo']} ({bid['codigo_unico']})")
                 st.caption(f"Selecionado por: {bid.get('log_selecao', '---')}")
 
-                # Mostra o Vencedor Indicado (Destaque)
                 vence_id = bid.get("lance_vencedor_id")
                 l_vence = None
                 if vence_id:
@@ -1341,15 +1231,13 @@ if st.session_state.user_type == "admin":
                         .data[0]
                     )
                     st.info(
-                        f"🏅 Vencedor Indicado pelo Analista: **{l_vence['transportadora_nome']}** - R$ {l_vence['valor']:,.2f} ({l_vence['prazo_dias']} dias)"
+                        f"Vencedor Indicado: **{l_vence['transportadora_nome']}** - R$ {l_vence['valor']:,.2f} ({l_vence['prazo_dias']} dias)"
                     )
 
                 st.divider()
 
-                # --- NOVO: RANKINGS PARA TOMADA DE DECISÃO ---
-                st.markdown("#### 📊 Panorama da Disputa")
+                st.markdown("#### Panorama da Disputa")
 
-                # Busca lances para montar os gráficos
                 lances = (
                     supabase.table("lances")
                     .select("*")
@@ -1361,14 +1249,12 @@ if st.session_state.user_type == "admin":
                 if lances:
                     df = pd.DataFrame(lances)
 
-                    # Cálculos (Mesma lógica da Análise)
                     min_p = df["valor"].min()
                     min_d = df["prazo_dias"].min()
                     df["score"] = (min_p / df["valor"]) * 70 + (
                         min_d / df["prazo_dias"]
                     ) * 30
 
-                    # Formatação para exibição
                     df_display = df.copy()
                     df_display["valor_fmt"] = df_display["valor"].apply(
                         lambda x: f"R$ {x:,.2f}"
@@ -1413,10 +1299,8 @@ if st.session_state.user_type == "admin":
 
                 st.divider()
 
-                # --- BOTÕES DE AÇÃO ---
                 col_btn_1, col_btn_2 = st.columns(2)
 
-                # --- BOTÃO DE APROVAR ---
                 if col_btn_1.button(
                     "APROVAR E FINALIZAR", key=f"ok_{bid['id']}", type="primary"
                 ):
@@ -1426,18 +1310,14 @@ if st.session_state.user_type == "admin":
                         {"status": "FINALIZADO", "log_aprovacao": stamp}
                     ).eq("id", bid["id"]).execute()
 
-                    # Prepara dados para notificação
                     bid["log_aprovacao"] = stamp
 
-                    # 1. Gera Arquivos
                     arquivos_audit = gerar_pdf_auditoria_completo(
                         bid, lances, l_vence, {}
                     )
 
-                    # 2. Busca dados do vencedor para mandar email pra ele
                     dados_vencedor_email = None
                     if l_vence:
-                        # Busca o email da transportadora vencedora na tabela de usuários
                         resp_tr = (
                             supabase.table("transportadoras")
                             .select("email, nome")
@@ -1447,7 +1327,6 @@ if st.session_state.user_type == "admin":
                         if resp_tr.data:
                             dados_vencedor_email = resp_tr.data[0]
 
-                    # 3. Dispara Notificações (Auditoria Admins + Vencedor)
                     notificar_usuarios(
                         "APROVACAO_FINAL",
                         dados_bid=bid,
@@ -1461,7 +1340,6 @@ if st.session_state.user_type == "admin":
                     sleep(2)
                     st.rerun()
 
-                # --- BOTÃO DE REPROVAR ---
                 if col_btn_2.button(
                     "REPROVAR (Voltar p/ Análise)", key=f"no_{bid['id']}"
                 ):
@@ -1473,20 +1351,15 @@ if st.session_state.user_type == "admin":
                         }
                     ).eq("id", bid["id"]).execute()
 
-                    # Notifica Admins que voltou
                     notificar_usuarios("REPROVACAO", dados_bid=bid)
 
                     st.warning("BID devolvido. Admins notificados.")
                     sleep(2)
                     st.rerun()
 
-# ==============================================================================
 # ÁREA PRESTADOR
-# ==============================================================================
 else:
-    # --- ROTEAMENTO DO MENU DO PRESTADOR ---
     if menu_provider == "Minha Conta":
-        # TELA 1: GESTÃO DA PRÓPRIA CONTA
         st.markdown("### Meus Dados de Acesso")
         st.info(
             "Mantenha seu e-mail atualizado para receber notificações e recuperar senha."
@@ -1494,7 +1367,6 @@ else:
 
         user_id = st.session_state.user_data["id"]
 
-        # Busca dados atualizados
         try:
             meus_dados = (
                 supabase.table("transportadoras")
@@ -1522,7 +1394,6 @@ else:
                         payload = {"email": novo_email}
                         msg_extra = ""
 
-                        # Validação de troca de senha
                         if nova_senha:
                             if nova_senha != c_senha:
                                 st.error("As senhas não conferem!")
@@ -1540,7 +1411,6 @@ else:
                             "id", user_id
                         ).execute()
 
-                        # Atualiza sessão local
                         st.session_state.user_data["email"] = novo_email
                         st.success(f"Dados{msg_extra} atualizados com sucesso!")
                         sleep(1)
@@ -1552,7 +1422,6 @@ else:
         st.markdown("### Meu Histórico de Participações")
         meu_nome = st.session_state.user_data["nome"]
 
-        # 1. Descobrir quais BIDs eu participei
         meus_lances = (
             supabase.table("lances")
             .select("bid_id")
@@ -1565,7 +1434,6 @@ else:
         if not ids_participados:
             st.info("Você ainda não participou de BIDs finalizados.")
         else:
-            # Busca detalhes desses BIDs (apenas finalizados)
             bids_meus = (
                 supabase.table("bids")
                 .select("*")
@@ -1581,12 +1449,10 @@ else:
 
             for bid in bids_meus:
                 with st.container(border=True):
-                    # Lógica de Resultado
                     resultado = "PERDEU"
                     cor_status = "red"
                     win_lance = None
 
-                    # Verifica quem ganhou
                     if bid.get("lance_vencedor_id"):
                         raw_win = (
                             supabase.table("lances")
@@ -1601,7 +1467,6 @@ else:
                                 resultado = "GANHOU"
                                 cor_status = "green"
 
-                    # Cabeçalho do Card
                     col_st, col_tit = st.columns([1, 4])
                     col_st.markdown(
                         f"<span style='color:{cor_status}; font-weight:bold; font-size:1.2rem'>{resultado}</span>",
@@ -1613,8 +1478,6 @@ else:
 
                     st.divider()
 
-                    # Comparativo (Feedback)
-                    # Busca MEU melhor lance neste BID
                     meu_melhor = (
                         supabase.table("lances")
                         .select("*")
@@ -1638,7 +1501,6 @@ else:
                             "Parabéns! Sua oferta foi a escolhida pela melhor combinação de Preço e Prazo."
                         )
                     elif win_lance:
-                        # MOSTRA DADOS DO VENCEDOR SEM MOSTRAR O NOME (LGPD)
                         delta_val = win_lance["valor"] - meu_melhor["valor"]
                         c2.metric(
                             "Oferta Vencedora (Anônimo)",
@@ -1647,7 +1509,6 @@ else:
                             delta_color="inverse",
                         )
 
-                        # Feedback inteligente
                         motivo = []
                         if win_lance["valor"] < meu_melhor["valor"]:
                             motivo.append("Preço menor")
@@ -1661,7 +1522,6 @@ else:
                         c2.info("Este BID foi cancelado ou finalizado sem vencedor.")
 
     elif menu_provider == "Painel de BIDs":
-        # TELA 2: LISTAGEM DE BIDS (Código Original Mantido)
         col_refresh, _ = st.columns([1, 4])
         if col_refresh.button("🔄 Atualizar Lista de BIDs", type="secondary"):
             st.rerun()
@@ -1675,7 +1535,6 @@ else:
             with st.container(border=True):
                 col_img, col_info, col_lance = st.columns([2, 3, 2])
 
-                # --- COLUNA 1: IMAGEM ---
                 with col_img:
                     if bid.get("imagem_url"):
                         st.image(bid["imagem_url"], use_container_width=True)
@@ -1685,9 +1544,7 @@ else:
                             unsafe_allow_html=True,
                         )
 
-                # --- COLUNA 2: INFO ---
                 with col_info:
-                    # Badges
                     cod = bid.get("codigo_unico", "---")
                     cat = bid.get("categoria_veiculo", "Geral").upper()
                     qtd = bid.get("quantidade_veiculos", 1)
@@ -1712,9 +1569,8 @@ else:
                     )
 
                     encerramento_br = formatar_data_br(bid.get("prazo_limite"))
-                    st.caption(f"🕒 Encerra em: {encerramento_br}")
+                    st.caption(f"Encerra em: {encerramento_br}")
 
-                    # Endereços Visual Novo
                     origem_txt = bid["origem"] if bid["origem"] else "---"
                     destino_txt = bid["destino"] if bid["destino"] else "---"
                     r_c = (
@@ -1731,13 +1587,13 @@ else:
                     st.markdown(
                         f"""
                     <div class="address-box">
-                        <div class="address-title">📍 ORIGEM</div>
+                        <div class="address-title">ORIGEM</div>
                         <div class="address-text">{origem_txt}</div>
                         <div style="font-size:0.75rem; color:#6B7280; margin-top:2px;">{r_c}</div>
                     </div>
                     
                     <div class="address-box" style="border-left-color: #6B7280;"> 
-                        <div class="address-title" style="color: #6B7280;">🏁 DESTINO</div>
+                        <div class="address-title" style="color: #6B7280;">DESTINO</div>
                         <div class="address-text">{destino_txt}</div>
                         <div style="font-size:0.75rem; color:#6B7280; margin-top:2px;">{e_c}</div>
                     </div>
@@ -1745,7 +1601,6 @@ else:
                         unsafe_allow_html=True,
                     )
 
-                    # Info Lances
                     lances = (
                         supabase.table("lances")
                         .select("valor, prazo_dias")
@@ -1767,17 +1622,13 @@ else:
                     else:
                         st.info("Seja o primeiro a ofertar!")
 
-                # --- COLUNA 3: DAR LANCE ---
-                # --- COLUNA 3: DAR LANCE (COM CONFIRMAÇÃO) ---
             with col_lance:
                 st.markdown("#### Enviar Proposta")
 
-                # Chave única para controle de confirmação deste BID específico
                 key_confirm = f"confirm_lance_{bid['id']}"
                 if key_confirm not in st.session_state:
                     st.session_state[key_confirm] = False
 
-                # Se NÃO estiver confirmando, mostra inputs
                 if not st.session_state[key_confirm]:
                     val = st.number_input(
                         f"Valor (R$)", min_value=0.0, step=50.0, key=f"v_{bid['id']}"
@@ -1795,11 +1646,9 @@ else:
                         except:
                             pass
 
-                    # Botão inicial de validação
                     if st.button(
                         "ENVIAR LANCE", key=f"btn_pre_{bid['id']}", type="primary"
                     ):
-                        # Validação preliminar
                         erro_validacao = ""
                         if melhor_valor is not None:
                             if val > melhor_valor and prazo >= melhor_prazo:
@@ -1813,13 +1662,11 @@ else:
                         if erro_validacao:
                             st.error(f"⚠️ {erro_validacao}")
                         else:
-                            # Tudo ok, ativa modo confirmação e salva dados temporários
                             st.session_state[key_confirm] = True
                             st.session_state[f"temp_val_{bid['id']}"] = val
                             st.session_state[f"temp_prazo_{bid['id']}"] = prazo
                             st.rerun()
 
-                # MODO CONFIRMAÇÃO (Card amarelo de alerta)
                 else:
                     val_temp = st.session_state.get(f"temp_val_{bid['id']}")
                     prazo_temp = st.session_state.get(f"temp_prazo_{bid['id']}")
@@ -1843,7 +1690,6 @@ else:
                         ).execute()
 
                         st.success("Lance Aceito!")
-                        # Limpa estado
                         st.session_state[key_confirm] = False
                         sleep(1.5)
                         st.rerun()
@@ -1852,7 +1698,6 @@ else:
                         st.session_state[key_confirm] = False
                         st.rerun()
 
-        # --- ORIENTAÇÕES (Mantido) ---
         with st.expander("ℹ️ Regras do Leilão e Critérios de Aprovação"):
             st.markdown(
                 """

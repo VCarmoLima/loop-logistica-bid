@@ -6,7 +6,6 @@ import csv
 import json
 from datetime import datetime
 
-# --- CONFIGURAÇÃO DE DIRETÓRIO ---
 DIRETORIO_LOGS = "Compliance_Audit_Logs"
 if not os.path.exists(DIRETORIO_LOGS):
     os.makedirs(DIRETORIO_LOGS)
@@ -14,7 +13,6 @@ if not os.path.exists(DIRETORIO_LOGS):
 
 class PDF(FPDF):
     def header(self):
-        # Faixa vermelha
         self.set_fill_color(220, 53, 69)
         self.rect(0, 0, 210, 5, "F")
 
@@ -50,20 +48,18 @@ class PDF(FPDF):
         self.ln(4)
 
     def zebra_table(self, header, data, col_widths):
-        # Cabeçalho
         self.set_font("Arial", "B", 9)
-        self.set_fill_color(52, 58, 64)  # Dark
+        self.set_fill_color(52, 58, 64)
         self.set_text_color(255, 255, 255)
         for i, h in enumerate(header):
             self.cell(col_widths[i], 7, h, 1, 0, "C", fill=True)
         self.ln()
 
-        # Dados
         self.set_font("Arial", "", 9)
         self.set_text_color(0, 0, 0)
         fill = False
         for row in data:
-            self.set_fill_color(245, 245, 245)  # Light Gray
+            self.set_fill_color(245, 245, 245)
             for i, d in enumerate(row):
                 align = "L" if i == 0 else "C"
                 self.cell(col_widths[i], 7, str(d), 1, 0, align, fill=fill)
@@ -121,7 +117,6 @@ def gerar_logs_csv_json(bid, lances, filename_base):
 
 
 def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_brutos):
-    # --- PREPARAÇÃO ---
     audit_id = f"{bid.get('codigo_unico', 'UNK')}-{datetime.now().strftime('%H%M%S')}"
     placa_clean = bid.get("placa", "NOPLATE").replace(" ", "")
     data_clean = datetime.now().strftime("%Y%m%d")
@@ -129,19 +124,15 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
 
     gerar_logs_csv_json(bid, lances, filename_base)
 
-    # --- FILTRO DE MELHOR LANCE POR TRANSPORTADORA ---
     df_unique = pd.DataFrame()
     if lances:
         df = pd.DataFrame(lances)
-        # Ordena para garantir que pegamos o melhor lance (Menor Preço, depois Menor Prazo, depois Mais Recente)
         df = df.sort_values(
             by=["transportadora_nome", "valor", "prazo_dias"],
             ascending=[True, True, True],
         )
-        # Remove duplicatas (fica só com a melhor oferta de cada um)
         df_unique = df.drop_duplicates(subset="transportadora_nome", keep="first")
 
-        # Recalcula Score para o Dashboard
         min_p = df_unique["valor"].min()
         min_d = df_unique["prazo_dias"].min()
 
@@ -152,12 +143,9 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
 
         df_unique["score"] = df_unique.apply(calc_score, axis=1)
 
-    # --- INÍCIO PDF ---
     pdf = PDF()
     pdf.audit_id = audit_id
     pdf.add_page()
-
-    # BLOCO 1: INFO DO ATIVO
     pdf.chapter_title("1. ASSET & OPERATION DETAILS")
 
     caminho_img = baixar_imagem(bid.get("imagem_url"))
@@ -186,7 +174,6 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
     if caminho_img and os.path.exists(caminho_img):
         os.remove(caminho_img)
 
-    # BLOCO 2: DASHBOARD VENCEDOR (LAYOUT CORRIGIDO)
     pdf.chapter_title("2. WINNER SCORECARD & PERFORMANCE")
 
     if vencedor_escolhido and not df_unique.empty:
@@ -194,7 +181,6 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
         v_valor = vencedor_escolhido["valor"]
         v_prazo = vencedor_escolhido["prazo_dias"]
 
-        # Pega o score calculado
         try:
             score_row = df_unique[df_unique["transportadora_nome"] == v_nome].iloc[0]
             final_score = score_row["score"]
@@ -205,50 +191,34 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
         pdf.cell(0, 10, f"WINNER: {v_nome}", 0, 1, "L")
         pdf.ln(2)
 
-        # --- CAIXAS LADO A LADO (USANDO CELL PARA NÃO QUEBRAR) ---
         col_w = 63
         h_box = 20
 
-        # Salva posição Y inicial
         y_start = pdf.get_y()
-
-        # 1. PRICE BOX
         pdf.set_fill_color(248, 249, 250)
         pdf.set_font("Arial", "B", 9)
         pdf.cell(col_w, 8, "FINAL PRICE", 1, 0, "C", fill=True)
-
-        # 2. SLA BOX
-        pdf.cell(5, 8, "", 0, 0)  # Espaço
+        pdf.cell(5, 8, "", 0, 0)
         pdf.cell(col_w, 8, "SLA / DEADLINE", 1, 0, "C", fill=True)
+        pdf.cell(5, 8, "", 0, 0)
+        pdf.cell(col_w, 8, "EFFICIENCY SCORE", 1, 1, "C", fill=True)
 
-        # 3. SCORE BOX
-        pdf.cell(5, 8, "", 0, 0)  # Espaço
-        pdf.cell(col_w, 8, "EFFICIENCY SCORE", 1, 1, "C", fill=True)  # Quebra linha
-
-        # --- VALORES DAS CAIXAS ---
-        # 1. Valor Price
         pdf.set_font("Arial", "B", 14)
-        pdf.set_text_color(220, 53, 69)  # Vermelho
+        pdf.set_text_color(220, 53, 69)
         pdf.cell(col_w, 15, f"R$ {v_valor:,.2f}", 1, 0, "C")
-
-        # 2. Valor SLA
-        pdf.set_text_color(40, 167, 69)  # Verde
+        pdf.set_text_color(40, 167, 69)
         pdf.cell(5, 15, "", 0, 0)
         pdf.cell(col_w, 15, f"{v_prazo} Days", 1, 0, "C")
-
-        # 3. Valor Score
-        pdf.set_text_color(0, 123, 255)  # Azul
+        pdf.set_text_color(0, 123, 255)
         pdf.cell(5, 15, "", 0, 0)
         pdf.cell(col_w, 15, f"{final_score} / 100", 1, 1, "C")
 
-        pdf.set_text_color(0)  # Reset cor
+        pdf.set_text_color(0)
         pdf.ln(10)
 
-    # BLOCO EXTRA: WORKFLOW TIMELINE
     pdf.ln(5)
     pdf.chapter_title("2.1. APPROVAL WORKFLOW TIMELINE")
 
-    # Busca os logs do objeto bid (que agora vem atualizado do banco)
     timeline_data = [
         ["STEP", "RESPONSIBLE & TIMESTAMP"],
         ["1. Creation", bid.get("log_criacao", "---")],
@@ -257,7 +227,6 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
         ["4. Final Approval (Master)", bid.get("log_aprovacao", "---")],
     ]
 
-    # Tabela simples para timeline
     pdf.set_font("Arial", "", 9)
     col_w = [60, 130]
 
@@ -275,9 +244,7 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
 
     pdf.ln(10)
 
-    # BLOCO 3: RANKINGS SEPARADOS
     if not df_unique.empty:
-        # A) RANKING MENOR PREÇO
         pdf.chapter_title("3.1. BEST PRICE RANKING (Lowest to Highest)")
         df_price = df_unique.sort_values(by="valor", ascending=True)
         data_price = []
@@ -294,7 +261,6 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
             ["Provider", "Best Offer", "Deadline"], data_price, [90, 50, 50]
         )
 
-        # B) RANKING MENOR PRAZO
         pdf.chapter_title("3.2. BEST DEADLINE RANKING (Fastest to Slowest)")
         df_deadline = df_unique.sort_values(by="prazo_dias", ascending=True)
         data_deadline = []
@@ -311,13 +277,11 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
             ["Provider", "Deadline", "Price Info"], data_deadline, [90, 50, 50]
         )
 
-    # BLOCO 4: AUDIT TRAIL
     pdf.add_page()
     pdf.chapter_title("4. FULL AUDIT TRAIL (ALL BIDS HISTORY)")
 
     header_hist = ["Timestamp", "Provider", "Bid Value", "Deadline"]
     hist_data = []
-    # Ordena cronologicamente
     for l in sorted(lances, key=lambda x: x["created_at"]):
         try:
             dt = datetime.fromisoformat(l["created_at"].replace("Z", ""))
@@ -336,7 +300,6 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
 
     pdf.zebra_table(header_hist, hist_data, [45, 75, 40, 30])
 
-    # SALVAR
     path_pdf = os.path.join(DIRETORIO_LOGS, f"{filename_base}.pdf")
     pdf.output(path_pdf)
 
