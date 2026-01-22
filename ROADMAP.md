@@ -3,7 +3,7 @@
 Este documento lista as melhorias planejadas e o progresso atual do Sistema de BIDs.
 
 ## Visão Admin
-- [ ] Acrescentar fluxo de aprovação do gestor.
+- [x] Acrescentar fluxo de aprovação do gestor.
 - [x] Gerar código único do BID para fins de auditoria.
 - [x] Quantidade de veículos (frotas).
 - [x] Aba histórico de BIDs detalhados.
@@ -22,7 +22,7 @@ Este documento lista as melhorias planejadas e o progresso atual do Sistema de B
 - [x] Acrescentar Placa e Código Único no PDF.
 - [x] Renomear o PDF com todas as informações importantes.
 - [x] Além do PDF, gerar um log completo em outros formatos auditáveis, com mais informações detalhadas.
-- [ ] Detalhamento de aprovações de BID por usuário.
+- [x] Detalhamento de aprovações de BID por usuário.
 - [x] Melhorar visual dos Rankings no relatório.
 - [x] Adicionar Dashboard de Score.
 
@@ -32,11 +32,10 @@ Este documento lista as melhorias planejadas e o progresso atual do Sistema de B
 ## Backend
 - [x] Gerador de senhas aleatórias enviado para o e-mail do admin e transportadores.
 
-## Frontend
-- [ ] Melhorar visual do menu lateral.
-- [ ] Refatoração técnica (HTML/CSS para JavaScript/TypeScript).
-
 ## Notificações
-- [ ] Fluxo de envio de e-mails aos transportadores quando um novo BID for lançado, a todos os admins quando um BID for aprovado, a todos os admins com anexo o doc de auditoria com informações detalhadas daquele BID, ao prestador quando ele vencer um BID, solicitando a remoção ou 
-- [ ] Ajustar lógica de envio dos e-mails.
+- [x] Fluxo de envio de e-mails aos transportadores quando um novo BID for lançado, a todos os admins quando um BID for aprovado, a todos os admins com anexo o doc de auditoria com informações detalhadas daquele BID, ao prestador quando ele vencer um BID, solicitando a remoção ou 
+- [x] Ajustar lógica de envio dos e-mails.
 - [ ] Criar um Bot do Telegram para acompanhamento em tempo real de atualizações dos BIDs.
+
+# Próximos passos:
+- Refatoração técnica (HTML/CSS para JavaScript/TypeScript).
