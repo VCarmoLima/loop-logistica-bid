@@ -17,14 +17,22 @@ import string
 st.set_page_config(page_title="BIDs", layout="wide")
 load_dotenv()
 
-# --- CONEXÃO SUPABASE ---
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASS = os.getenv("EMAIL_PASS")
+
+# --- CONEXÃO SUPABASE E EMAIL (ROBUSTA) ---
+def get_secret(key):
+    """Busca segredo primeiro no Streamlit Cloud, depois no .env local"""
+    if key in st.secrets:
+        return st.secrets[key]
+    return os.getenv(key)
+
+
+url = get_secret("SUPABASE_URL")
+key = get_secret("SUPABASE_KEY")
+EMAIL_USER = get_secret("EMAIL_USER")
+EMAIL_PASS = get_secret("EMAIL_PASS")
 
 if not url or not key:
-    st.error("Erro de configuração (.env)")
+    st.error("Erro de configuração: Credenciais (Secrets/.env) não encontradas.")
     st.stop()
 
 
