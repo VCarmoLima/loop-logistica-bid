@@ -1,4 +1,4 @@
-# 🚛 Logística BID (SaaS Enterprise)
+# Sistema de BID Logístico (SaaS Enterprise)
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
 ![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red)
@@ -7,7 +7,7 @@
 
 > **Uma plataforma completa para digitalização, governança e auditoria de cotações de frete.**
 
-O **Logística BID** é um sistema web *Full-Stack* que substitui negociações descentralizadas (e-mail/WhatsApp) por um ambiente de **Leilão Reverso** estruturado. O foco do projeto é **Compliance**: garantir que a escolha do transportador seja baseada em dados (Score Preço vs. Prazo) e que todo o processo seja auditável.
+O **Sistema de BID Logístico** é um sistema web *Full-Stack* que substitui negociações descentralizadas (e-mail/WhatsApp) por um ambiente de **Leilão Reverso** estruturado. O foco do projeto é **Compliance**: garantir que a escolha do transportador seja baseada em dados (Score Preço vs. Prazo) e que todo o processo seja auditável.
 
 ---
 ### ![Login Preview](image/Login.png)
