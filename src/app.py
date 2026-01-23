@@ -186,6 +186,9 @@ def enviar_email_background(
         msg.attach(MIMEText(html_content, "html"))
 
         if lista_anexos:
+            if isinstance(lista_anexos, str):
+                lista_anexos = [lista_anexos]
+
             from email.mime.application import MIMEApplication
 
             for anexo_path in lista_anexos:
@@ -207,9 +210,14 @@ def enviar_email_background(
         print(f"Email enviado para {destinatarios} (CC: {cc_list})")
 
         if lista_anexos:
+            if isinstance(lista_anexos, str):
+                lista_anexos = [lista_anexos]
             for f in lista_anexos:
                 if os.path.exists(f):
-                    os.remove(f)
+                    try:
+                        os.remove(f)
+                    except:
+                        pass
 
     except Exception as e:
         print(f"Erro envio email: {e}")

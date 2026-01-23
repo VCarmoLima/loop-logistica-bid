@@ -122,7 +122,7 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
     data_clean = datetime.now().strftime("%Y%m%d")
     filename_base = f"AUDIT_{bid.get('codigo_unico', 'BID')}_{placa_clean}_{data_clean}"
 
-    gerar_logs_csv_json(bid, lances, filename_base)
+    lista_arquivos = gerar_logs_csv_json(bid, lances, filename_base)
 
     df_unique = pd.DataFrame()
     if lances:
@@ -303,4 +303,6 @@ def gerar_pdf_auditoria_completo(bid, lances, vencedor_escolhido, rankings_bruto
     path_pdf = os.path.join(DIRETORIO_LOGS, f"{filename_base}.pdf")
     pdf.output(path_pdf)
 
-    return path_pdf
+    lista_arquivos.append(path_pdf)
+
+    return lista_arquivos
