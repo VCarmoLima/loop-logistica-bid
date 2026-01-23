@@ -1,6 +1,13 @@
-# Sistema de Gestão de BIDs Logísticos (SaaS)
+# 🚛 Logística BID (SaaS Enterprise)
 
-Plataforma web "full-stack" desenvolvida em Python para digitalização e automação de processos de cotação de fretes (BIDs). O sistema substitui negociações manuais descentralizadas por um ambiente de leilão reverso unificado, transparente e auditável, conectando embarcadores e transportadoras em tempo real.
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red)
+![Supabase](https://img.shields.io/badge/Database-Supabase-green)
+![Status](https://img.shields.io/badge/Status-Production-success)
+
+> **Uma plataforma completa para digitalização, governança e auditoria de cotações de frete.**
+
+O **Logística BID** é um sistema web *Full-Stack* que substitui negociações descentralizadas (e-mail/WhatsApp) por um ambiente de **Leilão Reverso** estruturado. O foco do projeto é **Compliance**: garantir que a escolha do transportador seja baseada em dados (Score Preço vs. Prazo) e que todo o processo seja auditável.
 
 ---
 ### ![Login Preview](image/Login.png)
@@ -14,15 +21,34 @@ Plataforma web "full-stack" desenvolvida em Python para digitalização e automa
 Este projeto foi concebido para resolver a ineficiência no processo de contratação de fretes spot e dedicados. A solução centraliza as ofertas, valida as regras de negócio automaticamente e fornece ferramentas de auditoria para compliance.
 
 ### Principais Diferenciais Técnicos
-* **Processamento Concorrente:** Utilização de Threading para execução de workers em background, permitindo monitoramento de prazos sem bloquear a interface do usuário.
-* **Regras de Negócio Complexas:** Algoritmo de validação de lances que impede propostas desvantajosas (preço maior com prazo igual ou pior) em tempo real.
-* **Geração Dinâmica de Documentos:** Criação automatizada de relatórios de auditoria em PDF utilizando a biblioteca FPDF, garantindo rastreabilidade do processo.
-* **Arquitetura SaaS:** Estrutura pronta para nuvem, com segregação de dados e gestão de múltiplos usuários.
+### 1. Governança e Segurança (RBAC)
+O sistema implementa controle de acesso baseado em função:
+* **Master Admin:** Aprovação final de BIDs, gestão de usuários e acesso a logs sensíveis.
+* **Standard Admin:** Criação de BIDs e análise técnica de propostas.
+* **Transportador:** Visualização apenas de BIDs abertos e envio de lances (blindado contra dados de concorrentes).
+
+### 2. Motor de Notificações Inteligente
+Sistema de e-mails transacionais em HTML (Threaded Background Tasks) para comunicação automática:
+* **Novo BID:** Alerta massivo para transportadores cadastrados.
+* **Vencedor:** E-mail de "Parabéns" para o ganhador (com Admins em cópia oculta/CC para transparência).
+* **Auditoria:** Envio automático de **PDFs e Logs** para a diretoria assim que um BID é aprovado.
+
+### 3. Matriz de Decisão & Score
+Algoritmo de classificação que pondera as ofertas:
+* **Ranking por Preço:** Menor valor.
+* **Ranking por Prazo:** Entrega mais rápida.
+* **Score Combinado:** `(70% Preço + 30% Prazo)` para identificar o melhor custo-benefício.
+
+### 4. Auditoria e Compliance (PDF)
+Geração automática de documentação jurídica pós-leilão:
+* Histórico temporal de todos os lances (quem, quando, quanto).
+* Scorecard do vencedor.
+* Workflow de aprovação (quem criou, quem selecionou, quem aprovou).
 
 ## Funcionalidades
 
 ### Painel Administrativo (Gestão)
-* **Cadastro de Cargas:** Interface para input detalhado de rotas, especificações de veículos e upload de imagens (integrado ao Supabase Storage).
+* **Cadastro de BIDs:** Interface para input detalhado de rotas, especificações de veículos e upload de imagens (integrado ao Supabase Storage).
 * **Dashboard em Tempo Real:** Monitoramento ao vivo das cotações com atualização automática de status e rankings.
 * **Matriz de Decisão:** Classificação automática de propostas baseada em Preço, Prazo e Score ponderado (Custo-Benefício).
 * **Homologação e Encerramento:** Fluxo de aprovação formal com geração automática de PDF contendo o histórico completo dos lances e dados do vencedor.
@@ -38,26 +64,26 @@ Este projeto foi concebido para resolver a ineficiência no processo de contrata
 
 ## Stack Tecnológico
 
-* **Linguagem:** Python 3.9+
-* **Framework Web:** Streamlit (focado em Data Apps e Dashboards Interativos)
-* **Banco de Dados:** Supabase (PostgreSQL)
-* **Storage:** Supabase Storage (Gerenciamento de Imagens)
-* **Bibliotecas-chave:** Pandas (Manipulação de Dados), FPDF (Relatórios), Threading (Concorrência).
+| Componente | Tecnologia | Função |
+| :--- | :--- | :--- |
+| **Frontend** | Streamlit | Interface reativa, Dashboards e Formulários. |
+| **Backend** | Python (Threading) | Regras de negócio, Workers em background e Gestão de Estado. |
+| **Database** | Supabase (PostgreSQL) | Persistência de dados, Relacionamentos e Storage de Imagens. |
+| **Comms** | SMTP (Gmail API) | Disparo de e-mails assíncronos com HTML Templates. |
+| **Reporting** | FPDF & Pandas | Geração de relatórios de auditoria e manipulação de dados. |
 
 ## Estrutura do Repositório
 
 ```text
 /
-├── database/           # Scripts SQL para criação do banco de dados (Schema)
-├── src/                # Código fonte da aplicação
-│   ├── app.py          # Arquivo principal (Frontend + Worker Thread)
-│   ├── utils_pdf.py    # Módulo de geração de relatórios PDF
-│   └── sync_users.py   # Script utilitário para gestão de usuários
-├── image/              # Assets e imagens do projeto
-├── ROADMAP.md          # Planejamento de funcionalidades futuras
-├── requirements.txt    # Dependências do projeto
-├── README.md           # Documentação
-└── credentials.json    # Arquivo modelo de credenciais 
+├── database/           # Scripts SQL (Schema do Supabase)
+├── src/                # Código Fonte
+│   ├── app.py          # Core Application (UI + Lógica + Workers)
+│   ├── utils_pdf.py    # Engine de Geração de PDFs e Logs (CSV/JSON)
+│   └── sync_users.py   # Script de Sincronização de Usuários (Batch)
+├── image/              # Assets visuais
+├── requirements.txt    # Dependências
+└── README.md           # Documentação 
 ```
 
 ---
@@ -65,6 +91,7 @@ Este projeto foi concebido para resolver a ineficiência no processo de contrata
 ### 1. Pré-requisitos
  - Python instalado.
  - Conta configurada no Supabase (URL e Key).
+ - Conta de E-mail (com Senha de App configurada).
 
 ### 2. Instalação
 Clone o repositório e instale as dependências:
@@ -78,6 +105,8 @@ Crie um arquivo .env na raiz do projeto com as chaves do Supabase:
 ```bash
 SUPABASE_URL="sua_url_supabase"
 SUPABASE_KEY="sua_chave_anonima"
+EMAIL_USER = "seu_email@dominio.com"
+EMAIL_PASS = "sua_senha_de_aplicativo"
 ```
 
 ### 4. Configuração do Banco de Dados
