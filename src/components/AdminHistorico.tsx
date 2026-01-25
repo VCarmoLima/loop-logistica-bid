@@ -154,6 +154,11 @@ export default function AdminHistorico() {
                                         </tbody>
                                     </table>
                                 </div>
+
+                                <div className="mt-4 text-xs text-gray-500 text-right">
+                                    Aprovado por: <span className="font-bold text-gray-700">{bid.log_aprovacao || 'Sistema'}</span>
+                                </div>
+                                
                                 <div className="mt-6 pt-4 border-t border-gray-200 flex justify-end gap-3">
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); downloadCSV(bid, bid.lances); }}
@@ -167,10 +172,7 @@ export default function AdminHistorico() {
                                     >
                                         <FileText size={14}/> BAIXAR AUDITORIA PDF
                                     </button>
-</div>
-                                <div className="mt-4 text-xs text-gray-500 text-right">
-                                    Aprovado por: <span className="font-bold text-gray-700">{bid.log_aprovacao || 'Sistema'}</span>
-                                </div>
+                                </div> 
                             </div>
                         )}
                     </div>
