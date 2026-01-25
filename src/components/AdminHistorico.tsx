@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Trophy, Calendar, MapPin, Truck, ChevronDown, ChevronUp } from 'lucide-react'
+import { downloadPDF, downloadCSV } from '@/lib/audit'
+import { FileText, FileSpreadsheet } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -152,6 +154,20 @@ export default function AdminHistorico() {
                                         </tbody>
                                     </table>
                                 </div>
+                                <div className="mt-6 pt-4 border-t border-gray-200 flex justify-end gap-3">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); downloadCSV(bid, bid.lances); }}
+                                        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded text-xs font-bold text-gray-700 hover:bg-gray-50"
+                                    >
+                                        <FileSpreadsheet size={14}/> CSV DADOS
+                                    </button>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); downloadPDF(bid, bid.lances, vencedor); }}
+                                        className="flex items-center gap-2 px-3 py-2 bg-red-900 text-white rounded text-xs font-bold hover:bg-red-800 shadow-sm"
+                                    >
+                                        <FileText size={14}/> BAIXAR AUDITORIA PDF
+                                    </button>
+</div>
                                 <div className="mt-4 text-xs text-gray-500 text-right">
                                     Aprovado por: <span className="font-bold text-gray-700">{bid.log_aprovacao || 'Sistema'}</span>
                                 </div>
