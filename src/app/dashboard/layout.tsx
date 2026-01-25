@@ -144,6 +144,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </>
           )}
+
+          {/* MENUS DA TRANSPORTADORA (CORREÇÃO AQUI) */}
+          {!isAdmin && (
+             <div>
+                <p className={sectionTitleStyle}>Histórico de BIDs</p>
+                <Link 
+                   href="/dashboard/historico"
+                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                       pathname === '/dashboard/historico' 
+                       ? 'bg-red-50 text-red-700' 
+                       : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                   }`}
+                >
+                   <History size={18} />Resultados
+                </Link>
+             </div>
+          )}
+
         </nav>
 
         {/* Footer: Minha Conta + Logout */}
