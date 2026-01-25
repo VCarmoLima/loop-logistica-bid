@@ -95,7 +95,7 @@ export default function LoginPage() {
           {/* Cabeçalho */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight uppercase">BID Logístico</h1>
-            <p className="text-sm text-gray-500 mt-1">Acesso Unificado</p>
+            <p className="text-sm text-gray-500 mt-1">Seja bem-vindo!</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
@@ -155,11 +155,21 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 text-center border-t border-gray-100 pt-4">
+            <div className="mt-8 text-center border-t border-gray-100 pt-4">
             <p className="text-xs text-gray-400">
-              © 2026 VCarmoLima • Release 2.0 (Next.js)
+              © {new Date().getFullYear()} VCarmoLima — Todos os direitos reservados.
             </p>
-          </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Precisa de ajuda?
+              <a
+              href="mailto:viniciuscarmo.contato@gmail.com"
+              className="text-red-600 hover:underline ml-1"
+              aria-label="Enviar email para suporte"
+              >
+              viniciuscarmo.contato@gmail.com
+              </a>
+            </p>
+            </div>
         </div>
       </div>
     </div>
