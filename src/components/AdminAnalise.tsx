@@ -124,13 +124,28 @@ export default function AdminAnalise({ user }: { user: any }) {
                         </div>
 
                         <div className="p-6">
+                            {/* BLINDAGEM PARA LEILÃO DESERTO */}
                             {totalLances === 0 ? (
-                                <div className="text-center py-8 bg-red-50 rounded-lg border border-red-100">
-                                    <AlertCircle className="mx-auto text-red-400 mb-2" size={24}/>
-                                    <h4 className="text-red-800 font-bold">Leilão Deserto</h4>
-                                    <p className="text-red-600 text-sm mb-4">Nenhuma proposta foi recebida para este lote.</p>
-                                    <button className="px-4 py-2 bg-white border border-red-200 text-red-700 text-sm font-bold rounded hover:bg-red-50">
-                                        Finalizar como Deserto
+                                <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                    <AlertCircle className="mx-auto text-gray-400 mb-3" size={32}/>
+                                    <h4 className="text-lg font-bold text-gray-900">Leilão Deserto</h4>
+                                    <p className="text-gray-500 mb-6">Nenhuma proposta foi recebida para este lote até o encerramento.</p>
+                                    
+                                    <button 
+                                        onClick={async () => {
+                                            if(!confirm('Deseja encerrar este BID como DESERTO? Ele irá direto para o Histórico.')) return;
+                                            await supabase.from('bids').update({
+                                                status: 'FINALIZADO',
+                                                lance_vencedor_id: null,
+                                                log_selecao: 'Encerrado como Deserto (Sem Lances)',
+                                                log_aprovacao: 'Sistema'
+                                            }).eq('id', bid.id);
+                                            alert('BID Encerrado.');
+                                            fetchBidsAnalise();
+                                        }}
+                                        className="px-6 py-2 bg-white border border-red-200 text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors shadow-sm"
+                                    >
+                                        ENCERRAR PROCESSO
                                     </button>
                                 </div>
                             ) : (
