@@ -5,7 +5,7 @@ import Cookies from 'js-cookie'
 import AdminDashboard from '@/components/AdminDashboard'
 import BidCard from '@/components/BidCard'
 import { createClient } from '@supabase/supabase-js'
-import { Truck } from 'lucide-react'
+import { Truck, Info } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,17 +16,41 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [bidsTransp, setBidsTransp] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showRules, setShowRules] = useState(false)
 
   useEffect(() => {
-    const session = Cookies.get('bid_session')
-    if (session) {
-        const userData = JSON.parse(session)
-        setUser(userData)
-        if (userData.type !== 'admin') {
-            fetchBidsTransporter()
+    let channel: any = null // Variável para guardar o canal e limpar depois
+
+    const init = async () => {
+        const session = Cookies.get('bid_session')
+        if (session) {
+            const userData = JSON.parse(session)
+            setUser(userData)
+            
+            if (userData.type !== 'admin') {
+                // Busca inicial
+                await fetchBidsTransporter()
+                
+                // Configura Realtime
+                channel = supabase.channel('realtime:lances')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lances' }, () => {
+                        console.log('Novo lance detectado! Atualizando...')
+                        fetchBidsTransporter()
+                    })
+                    .subscribe()
+            }
+        }
+        setLoading(false) // AGORA ESTA LINHA SEMPRE SERÁ EXECUTADA
+    }
+
+    init()
+
+    // Função de limpeza correta do React
+    return () => {
+        if (channel) {
+            supabase.removeChannel(channel)
         }
     }
-    setLoading(false)
   }, [])
 
   const fetchBidsTransporter = async () => {
@@ -39,28 +63,45 @@ export default function DashboardPage() {
     if (data) setBidsTransp(data)
   }
 
-  if (loading) return null // ou um spinner
+  if (loading) return <div className="p-8 text-center text-gray-500 font-medium">Carregando painel...</div>
 
-  // VISÃO ADMIN
+  // 1. VISÃO ADMIN
   if (user?.type === 'admin') {
       return <AdminDashboard user={user} />
   }
 
-  // VISÃO TRANSPORTADORA
+  // 2. VISÃO TRANSPORTADORA
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
             <h1 className="text-2xl font-bold text-gray-900">Mural de Oportunidades</h1>
-            <p className="text-gray-500 text-sm">BIDs abertos para cotação em tempo real.</p>
+            <p className="text-gray-500 text-sm flex items-center gap-1">
+                BIDs disponíveis em tempo real. 
+                <button onClick={() => setShowRules(!showRules)} className="text-red-600 font-bold hover:underline text-xs ml-2 flex items-center gap-1">
+                    <Info size={12}/> Como funciona o Leilão?
+                </button>
+            </p>
         </div>
         <button 
             onClick={fetchBidsTransporter} 
             className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors"
         >
-            ATUALIZAR LISTA
+            🔄 ATUALIZAR LISTA
         </button>
       </div>
+
+      {showRules && (
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 mb-8 text-sm text-blue-900 animate-in fade-in slide-in-from-top-2">
+            <h3 className="font-bold mb-2 flex items-center gap-2"><Info size={16}/> Regras do Leilão & Escolha</h3>
+            <ul className="list-disc pl-5 space-y-1 text-blue-800/80">
+                <li><strong>Ranking Dinâmico:</strong> O sistema prioriza o <span className="font-bold">Menor Preço</span>. Em caso de empate, vence o <span className="font-bold">Menor Prazo</span>.</li>
+                <li><strong>Decisão Final (Score):</strong> Após o encerramento, o sistema calcula um Score (70% Preço + 30% Prazo). O administrador utiliza este Score para homologar o vencedor.</li>
+                <li><strong>Lances "Ruins":</strong> Você pode ofertar um valor maior que o líder, desde que seu prazo seja agressivo. Se ambos forem piores, suas chances de vitória são mínimas.</li>
+                <li><strong>Encerramento:</strong> O leilão encerra automaticamente no horário estipulado.</li>
+            </ul>
+        </div>
+      )}
 
       {bidsTransp.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
@@ -78,7 +119,7 @@ export default function DashboardPage() {
                     bid={bid} 
                     userId={user.id}
                     userName={user.nome}
-                    onUpdate={fetchBidsTransporter} // Passa a função de refresh
+                    onUpdate={fetchBidsTransporter} 
                 />
             ))}
         </div>

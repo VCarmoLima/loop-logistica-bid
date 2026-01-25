@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { MapPin, Clock, Truck, TrendingDown, AlertCircle, CheckCircle, XCircle, DollarSign } from 'lucide-react'
+import { MapPin, Clock, Truck, TrendingDown, CheckCircle, XCircle, DollarSign, Zap } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,35 +26,61 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
   const lances = bid.lances || []
   const meusLances = lances.filter((l: any) => l.transportadora_nome === userName)
   
-  // Melhor lance geral (Mercado)
+  // Dados do Mercado (Líder)
   const melhorPreco = lances.length > 0 ? Math.min(...lances.map((l: any) => l.valor)) : null
+  // Para o melhor prazo, pegamos o prazo do lance que tem o melhor preço (regra de desempate) ou o menor absoluto
+  const melhorPrazo = lances.length > 0 ? Math.min(...lances.map((l: any) => l.prazo_dias)) : null
   
   // Meu melhor lance
   const meuMelhorLance = meusLances.length > 0 
     ? meusLances.reduce((prev: any, curr: any) => prev.valor < curr.valor ? prev : curr) 
     : null
 
-  // Status: Estou ganhando?
+  // Status
   const isLider = meuMelhorLance && melhorPreco && meuMelhorLance.valor === melhorPreco
   const isSuperado = meuMelhorLance && melhorPreco && meuMelhorLance.valor > melhorPreco
 
+  // Gamificação: Lance Relâmpago (Bater o preço em R$ 50,00 e igualar o prazo)
+  const handleLanceRelampago = () => {
+      if (!melhorPreco) return;
+      const novoPreco = melhorPreco - 50.0;
+      const novoPrazo = melhorPrazo || 1;
+      
+      setValor(novoPreco.toFixed(2).replace('.', ',')); // Formato BR para o input visual
+      setPrazo(String(novoPrazo));
+  }
+
   const handleEnviarLance = async () => {
-    const valorNum = parseFloat(valor.replace(/\./g, '').replace(',', '.'))
+    // Normaliza input (Aceita 1.000,00 ou 1000.00)
+    let valorClean = valor.replace(/\./g, '').replace(',', '.')
+    const valorNum = parseFloat(valorClean)
     const prazoNum = parseInt(prazo)
 
     if (!valorNum || !prazoNum) return alert('Preencha valor e prazo.')
     if (valorNum <= 0) return alert('Valor inválido.')
 
-    // Validação de "Preço a Bater" (Opcional: Apenas avisa)
-    if (melhorPreco && valorNum >= melhorPreco) {
-        if(!confirm(`Atenção: Seu lance de ${formatCurrency(valorNum)} não supera o líder atual (${formatCurrency(melhorPreco)}). Deseja enviar mesmo assim?`)) return
+    // 5.1 VALIDAÇÃO INTELIGENTE (Pop-up de Confirmação)
+    // Regra: Se Preço for PIOR (Maior ou Igual) E Prazo for PIOR (Maior ou Igual), avisa que é um lance ruim.
+    if (melhorPreco && melhorPrazo) {
+        const precoRuim = valorNum >= melhorPreco
+        const prazoRuim = prazoNum >= melhorPrazo
+
+        if (precoRuim && prazoRuim) {
+            const confirmacao = confirm(
+                `⚠️ ALERTA DE COMPETITIVIDADE ⚠️\n\n` +
+                `Seu lance (R$ ${formatCurrency(valorNum)} / ${prazoNum} dias) não supera o líder atual em nenhum critério.\n\n` +
+                `Isso reduz drasticamente suas chances de vitória.\n\n` +
+                `Deseja enviar mesmo assim?`
+            )
+            if (!confirmacao) return
+        }
     }
 
     setLoading(true)
     try {
         const { error } = await supabase.from('lances').insert({
             bid_id: bid.id,
-            transportadora_nome: userName, // Usamos o nome para vincular (idealmente seria ID)
+            transportadora_nome: userName,
             valor: valorNum,
             prazo_dias: prazoNum
         })
@@ -64,7 +90,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
         alert('Lance enviado com sucesso!')
         setValor('')
         setPrazo('')
-        if (onUpdate) onUpdate() // Atualiza a lista para recalcular status
+        if (onUpdate) onUpdate()
     } catch (err) {
         console.error(err)
         alert('Erro ao enviar lance.')
@@ -74,10 +100,10 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
   }
 
   return (
-    <div className={`bg-white border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md ${isLider ? 'border-green-500 ring-1 ring-green-500' : 'border-gray-200'}`}>
+    <div className={`bg-white border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md flex flex-col h-full ${isLider ? 'border-green-500 ring-2 ring-green-500' : 'border-gray-200'}`}>
       
       {/* Cabeçalho Visual */}
-      <div className="relative h-32 bg-gray-100">
+      <div className="relative h-32 bg-gray-100 flex-shrink-0">
         {bid.imagem_url ? (
             <img src={bid.imagem_url} alt="Veículo" className="w-full h-full object-cover" />
         ) : (
@@ -86,27 +112,22 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
             </div>
         )}
         
-        {/* Badge de Status (Gamification) */}
-        <div className="absolute top-2 right-2">
+        {/* Badges de Status */}
+        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
             {isLider && (
-                <span className="flex items-center gap-1 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
-                    <CheckCircle size={12}/> VOCÊ É O LÍDER
+                <span className="flex items-center gap-1 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm uppercase tracking-wide">
+                    <CheckCircle size={10}/> Você Lidera
                 </span>
             )}
             {isSuperado && (
-                <span className="flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
-                    <XCircle size={12}/> OFERTA SUPERADA
-                </span>
-            )}
-            {!meuMelhorLance && (
-                <span className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
-                    SEM LANCE
+                <span className="flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm uppercase tracking-wide">
+                    <XCircle size={10}/> Superado
                 </span>
             )}
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="p-5 flex flex-col flex-1">
         {/* Info Principal */}
         <div className="mb-4">
             <div className="flex justify-between items-start mb-1">
@@ -115,7 +136,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                     <Clock size={10} /> {formatDate(bid.prazo_limite)}
                 </span>
             </div>
-            <h3 className="text-base font-bold text-gray-900 leading-tight mb-1">{bid.titulo}</h3>
+            <h3 className="text-base font-bold text-gray-900 leading-tight mb-1 line-clamp-1" title={bid.titulo}>{bid.titulo}</h3>
             <p className="text-xs text-gray-600">{bid.categoria_veiculo} • {bid.tipo_transporte}</p>
         </div>
 
@@ -127,54 +148,67 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
             <span className="truncate font-medium">{bid.destino}</span>
         </div>
 
-        {/* Painel de Preços */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-gray-50 p-2 rounded border border-gray-100">
-                <p className="text-[10px] font-bold text-gray-500 uppercase mb-0.5">Líder Atual</p>
+        {/* 3. Painel de Mercado (Preço e Prazo do Líder) */}
+        <div className="grid grid-cols-2 gap-3 mb-4 mt-auto">
+            <div className="bg-gray-50 p-2 rounded border border-gray-200 text-center">
+                <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Melhor Preço</p>
                 <p className="text-sm font-extrabold text-gray-900">
                     {melhorPreco ? formatCurrency(melhorPreco) : '---'}
                 </p>
             </div>
-            <div className={`p-2 rounded border ${isLider ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}>
-                <p className="text-[10px] font-bold text-gray-500 uppercase mb-0.5">Sua Oferta</p>
-                <p className={`text-sm font-extrabold ${isLider ? 'text-green-700' : 'text-gray-900'}`}>
-                    {meuMelhorLance ? formatCurrency(meuMelhorLance.valor) : '---'}
+            <div className="bg-gray-50 p-2 rounded border border-gray-200 text-center">
+                <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Melhor Prazo</p>
+                <p className="text-sm font-extrabold text-gray-900">
+                    {melhorPrazo ? `${melhorPrazo} dias` : '---'}
                 </p>
             </div>
         </div>
 
         {/* Área de Lance */}
         <div className="space-y-3 pt-4 border-t border-gray-100">
-            <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Seu Valor (R$)</label>
-                <div className="relative">
-                    <DollarSign size={14} className="absolute left-3 top-3 text-gray-400"/>
+            {/* Gamificação: Botão Lance Relâmpago */}
+            {melhorPreco && !isLider && (
+                <button 
+                    onClick={handleLanceRelampago}
+                    className="w-full mb-2 bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 text-xs font-bold py-1.5 rounded flex items-center justify-center gap-1 transition-colors"
+                    title="Preenche automaticamente com R$ 50 a menos que o líder"
+                >
+                    <Zap size={12} className="fill-yellow-500 text-yellow-500" /> COBRIR AGORA (-R$50)
+                </button>
+            )}
+
+            <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                    <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Valor (R$)</label>
+                    <div className="relative">
+                        <DollarSign size={12} className="absolute left-2 top-2.5 text-gray-400"/>
+                        <input 
+                            type="text" // Text para facilitar formatação visual se quiser evoluir
+                            placeholder="0,00" 
+                            className="w-full pl-6 pr-2 py-2 border border-gray-300 rounded text-sm font-bold text-gray-900 focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none"
+                            value={valor}
+                            onChange={e => setValor(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Dias</label>
                     <input 
                         type="number" 
-                        placeholder="0,00" 
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded text-sm font-bold text-gray-900 focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none"
-                        value={valor}
-                        onChange={e => setValor(e.target.value)}
+                        placeholder="Ex: 2" 
+                        className="w-full px-2 py-2 border border-gray-300 rounded text-sm font-bold text-gray-900 focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none text-center"
+                        value={prazo}
+                        onChange={e => setPrazo(e.target.value)}
                     />
                 </div>
-            </div>
-            <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Prazo (Dias)</label>
-                <input 
-                    type="number" 
-                    placeholder="Ex: 5" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm font-bold text-gray-900 focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none"
-                    value={prazo}
-                    onChange={e => setPrazo(e.target.value)}
-                />
             </div>
             
             <button 
                 onClick={handleEnviarLance}
                 disabled={loading}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-xs uppercase tracking-wide shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-                {loading ? 'Enviando...' : <><TrendingDown size={16}/> ENVIAR LANCE AGORA</>}
+                {loading ? 'Processando...' : <><TrendingDown size={14}/> ENVIAR OFERTA</>}
             </button>
         </div>
 
