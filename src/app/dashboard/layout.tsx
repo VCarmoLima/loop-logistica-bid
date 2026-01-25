@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
-import { LayoutDashboard, FileSearch, History, Users, LogOut, PlusCircle, Truck } from 'lucide-react'
+import { LayoutDashboard, FileSearch, Users, LogOut, PlusCircle, Truck, ShieldCheck, History } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -27,33 +27,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null
 
-  // Itens do Menu (Lógica: Se for Admin mostra tudo, se for Transp mostra limitado)
   const isAdmin = user.type === 'admin'
+  const isMaster = user.role === 'master'
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* --- SIDEBAR FIXA --- */}
       <aside className="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col fixed h-full z-10">
         
-        {/* Logo / Header */}
         <div className="h-16 flex items-center px-6 border-b border-gray-100">
           <span className="text-xl font-extrabold text-gray-900 tracking-tight">
-            BID <span className="text-red-600">Logístico</span>
+            BID <span className="text-red-600">Log.</span>
           </span>
         </div>
 
-        {/* Info do Usuário */}
         <div className="p-6 border-b border-gray-50">
-          <p className="text-xs font-bold text-gray-400 uppercase mb-1">
-            {isAdmin ? 'Administrador' : 'Transportadora'}
-          </p>
-          <p className="text-sm font-bold text-gray-900 truncate">{user.nome}</p>
+          <div className="flex items-center justify-between">
+             <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">
+                    {isAdmin ? (isMaster ? 'Master Admin' : 'Analista') : 'Transportadora'}
+                </p>
+                <p className="text-sm font-bold text-gray-900 truncate">{user.nome}</p>
+             </div>
+             {isMaster && <ShieldCheck size={16} className="text-red-900" />}
+          </div>
         </div>
 
-        {/* Links de Navegação */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           
-          {/* PAINEL GERAL (Para todos) */}
           <Link 
             href="/dashboard"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -66,7 +66,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {isAdmin ? 'Painel Geral' : 'Mural de Oportunidades'}
           </Link>
 
-          {/* ITENS SÓ DE ADMIN */}
           {isAdmin && (
             <>
               <Link 
@@ -93,7 +92,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 Em Análise
               </Link>
               
-              {/* Placeholder para futuras páginas */}
+              {/* ITEM MASTER CORRIGIDO - AGORA VERMELHO ESCURO (VINHO) */}
+              {isMaster && (
+                <div className="pt-2 mt-2">
+                    <p className="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Área Master</p>
+                    <Link 
+                    href="/dashboard/aprovacao"
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        pathname === '/dashboard/aprovacao' 
+                        ? 'bg-red-900 text-white shadow-md' // Ativo: Vinho com texto branco
+                        : 'text-red-900 bg-red-50 hover:bg-red-100' // Inativo: Fundo claro, texto vinho
+                    }`}
+                    >
+                    <ShieldCheck size={18} />
+                    Aprovação
+                    </Link>
+                </div>
+              )}
+              
               <div className="pt-4 mt-4 border-t border-gray-100">
                  <p className="px-3 text-xs font-bold text-gray-400 uppercase mb-2">Gestão</p>
                  <button className="w-full flex items-center gap-3 px-3 py-2 text-gray-400 text-sm font-medium cursor-not-allowed">
@@ -107,7 +123,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </nav>
 
-        {/* Footer Sidebar */}
         <div className="p-4 border-t border-gray-100">
           <button 
             onClick={handleLogout}
@@ -119,7 +134,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* --- CONTEÚDO PRINCIPAL (Muda conforme a página) --- */}
       <main className="flex-1 ml-64 p-8">
         <div className="max-w-6xl mx-auto">
             {children}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { CheckCircle, AlertCircle, Trophy, TrendingUp, Clock, DollarSign } from 'lucide-react'
+import { CheckCircle, AlertCircle, Trophy, Clock, DollarSign, FileText } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,6 +14,7 @@ export default function AdminAnalise({ user }: { user: any }) {
   const [bids, setBids] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedWinners, setSelectedWinners] = useState<{[key: string]: string}>({})
+  const [justificativas, setJustificativas] = useState<{[key: string]: string}>({})
   const [processingId, setProcessingId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -37,26 +38,24 @@ export default function AdminAnalise({ user }: { user: any }) {
     }
   }
 
-  // Função que calcula o Score (Custo-Benefício)
   const calcularRankings = (lances: any[]) => {
     if (!lances || lances.length === 0) return []
-
     const minPreco = Math.min(...lances.map(l => l.valor))
     const minPrazo = Math.min(...lances.map(l => l.prazo_dias))
 
     return lances.map(l => {
-        // Fórmula: (MinPreço / Preço * 70) + (MinPrazo / Prazo * 30)
         const scorePreco = (minPreco / l.valor) * 70
         const scorePrazo = (minPrazo / l.prazo_dias) * 30
-        const scoreFinal = scorePreco + scorePrazo
-        return { ...l, score: scoreFinal }
-    }).sort((a, b) => b.score - a.score) // Ordena do maior score para o menor
+        return { ...l, score: scorePreco + scorePrazo }
+    }).sort((a, b) => b.score - a.score)
   }
 
   const handleSelecionarVencedor = async (bidId: string) => {
     const vencedorId = selectedWinners[bidId]
-    if (!vencedorId) return alert('Selecione uma transportadora vencedora na lista.')
+    const justificativaTexto = justificativas[bidId]
 
+    if (!vencedorId) return alert('Selecione uma transportadora vencedora na lista.')
+    
     if (!confirm('Confirma a seleção deste vencedor? O processo irá para APROVAÇÃO FINAL.')) return
 
     setProcessingId(bidId)
@@ -66,7 +65,8 @@ export default function AdminAnalise({ user }: { user: any }) {
             .update({
                 status: 'AGUARDANDO_APROVACAO',
                 lance_vencedor_id: vencedorId,
-                log_selecao: `${user.nome} em ${new Date().toLocaleString()}`
+                log_selecao: `${user.nome} em ${new Date().toLocaleString()}`,
+                justificativa_selecao: justificativaTexto || 'Sem justificativa adicional.'
             })
             .eq('id', bidId)
 
@@ -107,7 +107,6 @@ export default function AdminAnalise({ user }: { user: any }) {
 
                 return (
                     <div key={bid.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                        {/* Cabeçalho do Card */}
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
@@ -136,50 +135,50 @@ export default function AdminAnalise({ user }: { user: any }) {
                                 </div>
                             ) : (
                                 <>
-                                    {/* 3 Tabelas de Ranking (Grid) */}
+                                    {/* Rankings Padronizados e SEM TRUNCATE */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                        {/* 1. Melhor Preço */}
-                                        <div className="border border-gray-100 rounded-lg overflow-hidden">
+                                        {/* 1. Preço (Verde) */}
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
                                             <div className="bg-green-50 px-3 py-2 border-b border-green-100 flex items-center gap-2">
-                                                <DollarSign size={14} className="text-green-600"/>
-                                                <span className="text-xs font-bold text-green-800 uppercase">Menor Preço</span>
+                                                <DollarSign size={14} className="text-green-700"/>
+                                                <span className="text-xs font-bold text-green-700 uppercase">Menor Preço</span>
                                             </div>
-                                            <div className="p-2">
+                                            <div className="p-2 bg-white">
                                                 {[...lancesCalculados].sort((a,b) => a.valor - b.valor).slice(0,3).map((l, i) => (
-                                                    <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-gray-50">
-                                                        <span className="text-gray-600 truncate max-w-[100px]">{i+1}. {l.transportadora_nome}</span>
-                                                        <span className="font-bold text-gray-900">{formatCurrency(l.valor)}</span>
+                                                    <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-gray-100">
+                                                        <span className="text-gray-900 font-medium">{i+1}. {l.transportadora_nome}</span>
+                                                        <span className="font-bold text-green-700">{formatCurrency(l.valor)}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        {/* 2. Melhor Prazo */}
-                                        <div className="border border-gray-100 rounded-lg overflow-hidden">
-                                            <div className="bg-blue-50 px-3 py-2 border-b border-blue-100 flex items-center gap-2">
-                                                <Clock size={14} className="text-blue-600"/>
-                                                <span className="text-xs font-bold text-blue-800 uppercase">Melhor Prazo</span>
+                                        {/* 2. Prazo (Verde) */}
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                            <div className="bg-green-50 px-3 py-2 border-b border-green-100 flex items-center gap-2">
+                                                <Clock size={14} className="text-green-700"/>
+                                                <span className="text-xs font-bold text-green-700 uppercase">Melhor Prazo</span>
                                             </div>
-                                            <div className="p-2">
+                                            <div className="p-2 bg-white">
                                                 {[...lancesCalculados].sort((a,b) => a.prazo_dias - b.prazo_dias).slice(0,3).map((l, i) => (
-                                                    <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-gray-50">
-                                                        <span className="text-gray-600 truncate max-w-[100px]">{i+1}. {l.transportadora_nome}</span>
-                                                        <span className="font-bold text-gray-900">{l.prazo_dias} dias</span>
+                                                    <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-gray-100">
+                                                        <span className="text-gray-900 font-medium">{i+1}. {l.transportadora_nome}</span>
+                                                        <span className="font-bold text-green-700">{l.prazo_dias} dias</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        {/* 3. Melhor Score (Recomendado) */}
-                                        <div className="border border-purple-100 rounded-lg overflow-hidden ring-1 ring-purple-100">
-                                            <div className="bg-purple-50 px-3 py-2 border-b border-purple-100 flex items-center gap-2">
-                                                <Trophy size={14} className="text-purple-600"/>
-                                                <span className="text-xs font-bold text-purple-800 uppercase">Melhor Score (Recomendado)</span>
+                                        {/* 3. Score (Neutro/Preto) */}
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                            <div className="bg-gray-100 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
+                                                <Trophy size={14} className="text-gray-700"/>
+                                                <span className="text-xs font-bold text-gray-700 uppercase">Melhor Score</span>
                                             </div>
-                                            <div className="p-2 bg-purple-50/10">
+                                            <div className="p-2 bg-white">
                                                 {lancesCalculados.slice(0,3).map((l, i) => (
-                                                    <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-purple-50">
-                                                        <span className={`truncate max-w-[100px] ${i===0 ? 'font-bold text-purple-900' : 'text-gray-600'}`}>
+                                                    <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-gray-100">
+                                                        <span className={`font-medium ${i===0 ? 'text-gray-900 font-bold' : 'text-gray-600'}`}>
                                                             {i+1}. {l.transportadora_nome}
                                                         </span>
                                                         <span className="font-bold text-gray-900">{l.score.toFixed(1)} pts</span>
@@ -189,30 +188,47 @@ export default function AdminAnalise({ user }: { user: any }) {
                                         </div>
                                     </div>
 
-                                    {/* Área de Ação */}
-                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col md:flex-row gap-4 items-end">
-                                        <div className="flex-1 w-full">
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Selecione o Vencedor</label>
-                                            <select 
-                                                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-red-500 outline-none"
-                                                value={selectedWinners[bid.id] || ''}
-                                                onChange={(e) => setSelectedWinners(prev => ({...prev, [bid.id]: e.target.value}))}
-                                            >
-                                                <option value="">-- Escolha a Transportadora --</option>
-                                                {lancesCalculados.map(l => (
-                                                    <option key={l.id} value={l.id}>
-                                                        {l.transportadora_nome} — {formatCurrency(l.valor)} ({l.prazo_dias} dias) — Score: {l.score.toFixed(1)}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                    {/* Área de Seleção */}
+                                    <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                                        <div className="flex flex-col gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Vencedor Selecionado</label>
+                                                <select 
+                                                    className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:ring-2 focus:ring-red-500 outline-none cursor-pointer"
+                                                    value={selectedWinners[bid.id] || ''}
+                                                    onChange={(e) => setSelectedWinners(prev => ({...prev, [bid.id]: e.target.value}))}
+                                                >
+                                                    <option value="">-- Escolha a Transportadora --</option>
+                                                    {lancesCalculados.map(l => (
+                                                        <option key={l.id} value={l.id}>
+                                                            {l.transportadora_nome} — {formatCurrency(l.valor)} — Score: {l.score.toFixed(1)}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1">
+                                                    <FileText size={12}/> Justificativa da Escolha
+                                                </label>
+                                                <textarea 
+                                                    className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-red-500 outline-none resize-none h-24"
+                                                    placeholder="Descreva o motivo técnico/comercial para esta escolha. Essa informação constará na auditoria."
+                                                    value={justificativas[bid.id] || ''}
+                                                    onChange={(e) => setJustificativas(prev => ({...prev, [bid.id]: e.target.value}))}
+                                                />
+                                            </div>
+
+                                            <div className="flex justify-end pt-2">
+                                                <button 
+                                                    onClick={() => handleSelecionarVencedor(bid.id)}
+                                                    disabled={processingId === bid.id || !selectedWinners[bid.id]}
+                                                    className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                                                >
+                                                    {processingId === bid.id ? 'Salvando...' : <><CheckCircle size={18}/> ENVIAR PARA APROVAÇÃO</>}
+                                                </button>
+                                            </div>
                                         </div>
-                                        <button 
-                                            onClick={() => handleSelecionarVencedor(bid.id)}
-                                            disabled={processingId === bid.id || !selectedWinners[bid.id]}
-                                            className="w-full md:w-auto px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-                                        >
-                                            {processingId === bid.id ? 'Processando...' : <><CheckCircle size={18}/> CONFIRMAR VENCEDOR</>}
-                                        </button>
                                     </div>
                                 </>
                             )}
