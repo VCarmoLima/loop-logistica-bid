@@ -234,7 +234,7 @@ export default function NovoBidPage() {
         </div>
         <div>
             <h1 className="text-2xl font-bold text-gray-900">Cadastro de Novo BID</h1>
-            <p className="text-gray-500 text-sm">Preencha os dados operacionais para abrir a cotação.</p>
+            <p className="text-gray-500 text-sm">Preencha os dados para abrir a cotação.</p>
         </div>
       </div>
 
