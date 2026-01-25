@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Cookies from 'js-cookie'
 import AdminDashboard from '@/components/AdminDashboard'
 import BidCard from '@/components/BidCard'
@@ -18,8 +18,23 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [showRules, setShowRules] = useState(false)
 
+  // Função de busca (memorizada para usar no useEffect)
+  const fetchBidsTransporter = useCallback(async () => {
+    const { data } = await supabase
+        .from('bids')
+        .select('*, lances!lances_bid_id_fkey(*)')
+        .eq('status', 'ABERTO')
+        .order('created_at', { ascending: false })
+    
+    if (data) {
+        setBidsTransp(data)
+        console.log("Lista de BIDs atualizada.")
+    }
+  }, [])
+
   useEffect(() => {
-    let channel: any = null // Variável para guardar o canal e limpar depois
+    let channel: any = null
+    let interval: any = null
 
     const init = async () => {
         const session = Cookies.get('bid_session')
@@ -28,40 +43,39 @@ export default function DashboardPage() {
             setUser(userData)
             
             if (userData.type !== 'admin') {
-                // Busca inicial
+                // 1. Busca Inicial
                 await fetchBidsTransporter()
                 
-                // Configura Realtime
-                channel = supabase.channel('realtime:lances')
-                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lances' }, () => {
-                        console.log('Novo lance detectado! Atualizando...')
-                        fetchBidsTransporter()
-                    })
+                // 2. Configura Realtime (WebSockets)
+                channel = supabase.channel('mural-realtime')
+                    .on(
+                        'postgres_changes', 
+                        { event: '*', schema: 'public', table: 'lances' }, 
+                        (payload) => {
+                            console.log('⚡ Mudança em lances detectada (Realtime):', payload)
+                            fetchBidsTransporter()
+                        }
+                    )
                     .subscribe()
+
+                // 3. Configura Polling (Backup a cada 5s)
+                // Isso garante atualização mesmo se o Realtime falhar ou houver bloqueio de RLS
+                interval = setInterval(() => {
+                    fetchBidsTransporter()
+                }, 1500)
             }
         }
-        setLoading(false) // AGORA ESTA LINHA SEMPRE SERÁ EXECUTADA
+        setLoading(false)
     }
 
     init()
 
-    // Função de limpeza correta do React
+    // Limpeza ao desmontar
     return () => {
-        if (channel) {
-            supabase.removeChannel(channel)
-        }
+        if (channel) supabase.removeChannel(channel)
+        if (interval) clearInterval(interval)
     }
-  }, [])
-
-  const fetchBidsTransporter = async () => {
-    const { data } = await supabase
-        .from('bids')
-        .select('*, lances!lances_bid_id_fkey(*)')
-        .eq('status', 'ABERTO')
-        .order('created_at', { ascending: false })
-    
-    if (data) setBidsTransp(data)
-  }
+  }, [fetchBidsTransporter]) // Dependência segura
 
   if (loading) return <div className="p-8 text-center text-gray-500 font-medium">Carregando painel...</div>
 
@@ -87,7 +101,7 @@ export default function DashboardPage() {
             onClick={fetchBidsTransporter} 
             className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors"
         >
-            🔄 ATUALIZAR LISTA
+            ATUALIZAR LISTA
         </button>
       </div>
 
