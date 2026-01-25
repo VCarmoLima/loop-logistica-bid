@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Header Logo */}
         <div className="h-16 flex items-center px-6 border-b border-gray-100">
           <span className="text-xl font-extrabold text-gray-900 tracking-tight">
-            BID <span className="text-red-600">Log.</span>
+            BID <span className="text-red-600">Logístico</span>
           </span>
         </div>
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { CheckCircle, AlertCircle, Trophy, Clock, DollarSign, FileText } from 'lucide-react'
+import { CheckCircle, AlertCircle, Trophy, Clock, DollarSign, FileText, RefreshCcw, XOctagon } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,6 +16,11 @@ export default function AdminAnalise({ user }: { user: any }) {
   const [selectedWinners, setSelectedWinners] = useState<{[key: string]: string}>({})
   const [justificativas, setJustificativas] = useState<{[key: string]: string}>({})
   const [processingId, setProcessingId] = useState<string | null>(null)
+
+  // Estados para Relançamento
+  const [relaunchDate, setRelaunchDate] = useState('')
+  const [relaunchTime, setRelaunchTime] = useState('')
+  const [showRelaunch, setShowRelaunch] = useState<string | null>(null)
 
   useEffect(() => {
     fetchBidsAnalise()
@@ -82,6 +87,52 @@ export default function AdminAnalise({ user }: { user: any }) {
     }
   }
 
+  const handleRelancar = async (bidId: string) => {
+      if (!relaunchDate || !relaunchTime) return alert('Defina a nova data e horário para o relançamento.')
+      
+      const novaDataIso = new Date(`${relaunchDate}T${relaunchTime}:00`).toISOString()
+      
+      if (!confirm(`Confirmar relançamento do BID para ${formatDate(novaDataIso)}?`)) return
+
+      setProcessingId(bidId)
+      try {
+          const { error } = await supabase.from('bids').update({
+              status: 'ABERTO',
+              prazo_limite: novaDataIso,
+          }).eq('id', bidId)
+
+          if (error) throw error
+          alert('Leilão relançado com sucesso!')
+          fetchBidsAnalise()
+      } catch (err) {
+          alert('Erro ao relançar.')
+      } finally {
+          setProcessingId(null)
+          setShowRelaunch(null)
+      }
+  }
+
+  const handleEncerrarDeserto = async (bidId: string) => {
+      if(!confirm('Deseja encerrar este BID como DESERTO (Sem Vencedor)?')) return;
+      
+      setProcessingId(bidId)
+      try {
+        await supabase.from('bids').update({
+            status: 'FINALIZADO',
+            lance_vencedor_id: null,
+            log_selecao: `Encerrado como Deserto por ${user.nome}`,
+            log_aprovacao: 'Dispensa de Aprovação (Deserto)'
+        }).eq('id', bidId);
+        
+        alert('BID Encerrado.');
+        fetchBidsAnalise();
+      } catch (err) {
+          alert('Erro ao encerrar.')
+      } finally {
+          setProcessingId(null)
+      }
+  }
+
   if (loading) return <div className="p-8 text-center text-gray-500">Carregando análises...</div>
 
   return (
@@ -109,50 +160,97 @@ export default function AdminAnalise({ user }: { user: any }) {
                     <div key={bid.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded uppercase border border-yellow-200">
-                                        Em Análise
-                                    </span>
-                                    <span className="text-gray-400 text-xs font-mono">{bid.codigo_unico}</span>
+                                <div className="flex items-center gap-3 mb-1">
+                                    {/* CORREÇÃO: Tag amarela removida. Apenas o código em cinza escuro. */}
+                                    <span className="text-gray-500 font-mono text-xs font-bold tracking-wide">{bid.codigo_unico}</span>
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-900">{bid.titulo}</h3>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase font-bold">Encerrado em</p>
+                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">Encerrado em</p>
                                 <p className="text-sm font-medium text-gray-900">{formatDate(bid.prazo_limite)}</p>
                             </div>
                         </div>
 
                         <div className="p-6">
-                            {/* BLINDAGEM PARA LEILÃO DESERTO */}
+                            {/* --- CENÁRIO: LEILÃO DESERTO --- */}
                             {totalLances === 0 ? (
-                                <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                                    <AlertCircle className="mx-auto text-gray-400 mb-3" size={32}/>
-                                    <h4 className="text-lg font-bold text-gray-900">Leilão Deserto</h4>
-                                    <p className="text-gray-500 mb-6">Nenhuma proposta foi recebida para este lote até o encerramento.</p>
-                                    
-                                    <button 
-                                        onClick={async () => {
-                                            if(!confirm('Deseja encerrar este BID como DESERTO? Ele irá direto para o Histórico.')) return;
-                                            await supabase.from('bids').update({
-                                                status: 'FINALIZADO',
-                                                lance_vencedor_id: null,
-                                                log_selecao: 'Encerrado como Deserto (Sem Lances)',
-                                                log_aprovacao: 'Sistema'
-                                            }).eq('id', bid.id);
-                                            alert('BID Encerrado.');
-                                            fetchBidsAnalise();
-                                        }}
-                                        className="px-6 py-2 bg-white border border-red-200 text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors shadow-sm"
-                                    >
-                                        ENCERRAR PROCESSO
-                                    </button>
+                                <div className="bg-red-50 rounded-xl border border-red-100 p-6">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="p-3 bg-white rounded-full text-red-500 shadow-sm border border-red-100">
+                                            <AlertCircle size={24} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-lg font-bold text-red-900">Leilão Deserto (Sem Lances)</h4>
+                                            <p className="text-red-700 text-sm">O prazo encerrou e nenhuma transportadora enviou proposta.</p>
+                                        </div>
+                                    </div>
+
+                                    {!showRelaunch ? (
+                                        <div className="flex gap-4">
+                                            <button 
+                                                onClick={() => setShowRelaunch(bid.id)}
+                                                className="flex-1 bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400 transition-all flex justify-center items-center gap-2 shadow-sm"
+                                            >
+                                                <RefreshCcw size={18}/> RELANÇAR LEILÃO (Novo Prazo)
+                                            </button>
+                                            <button 
+                                                onClick={() => handleEncerrarDeserto(bid.id)}
+                                                className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all flex justify-center items-center gap-2 shadow-sm"
+                                            >
+                                                <XOctagon size={18}/> ENCERRAR DEFINITIVAMENTE
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white p-6 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2 shadow-sm">
+                                            <h5 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
+                                                <RefreshCcw size={16} className="text-red-600"/> Configurar Relançamento
+                                            </h5>
+                                            <div className="grid grid-cols-2 gap-6 mb-6">
+                                                <div>
+                                                    <label className="text-xs font-bold text-gray-700 uppercase mb-2 block">Nova Data</label>
+                                                    {/* CORREÇÃO: Inputs com texto preto e borda focada vermelha */}
+                                                    <input 
+                                                        type="date" 
+                                                        className="w-full p-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none" 
+                                                        value={relaunchDate} 
+                                                        onChange={e => setRelaunchDate(e.target.value)} 
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold text-gray-700 uppercase mb-2 block">Novo Horário</label>
+                                                    <input 
+                                                        type="time" 
+                                                        className="w-full p-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none" 
+                                                        value={relaunchTime} 
+                                                        onChange={e => setRelaunchTime(e.target.value)} 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end gap-3 pt-2">
+                                                <button 
+                                                    onClick={() => setShowRelaunch(null)} 
+                                                    className="text-xs font-bold text-gray-600 hover:text-gray-900 px-4 py-2 transition-colors"
+                                                >
+                                                    CANCELAR
+                                                </button>
+                                                {/* CORREÇÃO: Botão Vermelho */}
+                                                <button 
+                                                    onClick={() => handleRelancar(bid.id)}
+                                                    disabled={processingId === bid.id}
+                                                    className="bg-red-600 text-white text-xs font-bold px-6 py-2.5 rounded-lg hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                                                >
+                                                    {processingId === bid.id ? 'PROCESSANDO...' : 'CONFIRMAR RELANÇAMENTO'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <>
-                                    {/* Rankings Padronizados e SEM TRUNCATE */}
+                                    {/* ... Rankings Normais ... */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                        {/* 1. Preço (Verde) */}
+                                        {/* Preço (Verde) */}
                                         <div className="border border-gray-200 rounded-lg overflow-hidden">
                                             <div className="bg-green-50 px-3 py-2 border-b border-green-100 flex items-center gap-2">
                                                 <DollarSign size={14} className="text-green-700"/>
@@ -161,14 +259,13 @@ export default function AdminAnalise({ user }: { user: any }) {
                                             <div className="p-2 bg-white">
                                                 {[...lancesCalculados].sort((a,b) => a.valor - b.valor).slice(0,3).map((l, i) => (
                                                     <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-gray-100">
-                                                        <span className="text-gray-900 font-medium">{i+1}. {l.transportadora_nome}</span>
+                                                        <span className="text-gray-900 truncate max-w-[100px]">{i+1}. {l.transportadora_nome}</span>
                                                         <span className="font-bold text-green-700">{formatCurrency(l.valor)}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-
-                                        {/* 2. Prazo (Verde) */}
+                                        {/* Prazo (Verde) */}
                                         <div className="border border-gray-200 rounded-lg overflow-hidden">
                                             <div className="bg-green-50 px-3 py-2 border-b border-green-100 flex items-center gap-2">
                                                 <Clock size={14} className="text-green-700"/>
@@ -177,14 +274,13 @@ export default function AdminAnalise({ user }: { user: any }) {
                                             <div className="p-2 bg-white">
                                                 {[...lancesCalculados].sort((a,b) => a.prazo_dias - b.prazo_dias).slice(0,3).map((l, i) => (
                                                     <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-gray-100">
-                                                        <span className="text-gray-900 font-medium">{i+1}. {l.transportadora_nome}</span>
+                                                        <span className="text-gray-900 truncate max-w-[100px]">{i+1}. {l.transportadora_nome}</span>
                                                         <span className="font-bold text-green-700">{l.prazo_dias} dias</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-
-                                        {/* 3. Score (Neutro/Preto) */}
+                                        {/* Score (Neutro/Preto) */}
                                         <div className="border border-gray-200 rounded-lg overflow-hidden">
                                             <div className="bg-gray-100 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
                                                 <Trophy size={14} className="text-gray-700"/>
@@ -193,7 +289,7 @@ export default function AdminAnalise({ user }: { user: any }) {
                                             <div className="p-2 bg-white">
                                                 {lancesCalculados.slice(0,3).map((l, i) => (
                                                     <div key={l.id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0 border-gray-100">
-                                                        <span className={`font-medium ${i===0 ? 'text-gray-900 font-bold' : 'text-gray-600'}`}>
+                                                        <span className={`truncate max-w-[100px] ${i===0 ? 'font-bold text-gray-900' : 'text-gray-500'}`}>
                                                             {i+1}. {l.transportadora_nome}
                                                         </span>
                                                         <span className="font-bold text-gray-900">{l.score.toFixed(1)} pts</span>
@@ -203,7 +299,7 @@ export default function AdminAnalise({ user }: { user: any }) {
                                         </div>
                                     </div>
 
-                                    {/* Área de Seleção */}
+                                    {/* Seleção */}
                                     <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
                                         <div className="flex flex-col gap-4">
                                             <div>
