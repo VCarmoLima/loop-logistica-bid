@@ -2,7 +2,7 @@
 
 Este documento detalha as etapas de desenvolvimento, melhorias de interface, implementação de novas lógicas de negócio e profissionalização do sistema de leilão de fretes (BIDs).
 
-## 🟢 Fase 1: Interface (UX/UI) e Estrutura Base
+## 🟢 Interface (UX/UI) e Estrutura Base
 Foco em usabilidade e navegação do sistema.
 
 - [ ] **Página de Login:**
@@ -18,7 +18,7 @@ Foco em usabilidade e navegação do sistema.
 - [ ] **Ajuste Pop-ups/Notificações**
     - [ ] Não utilizar Pop-ups do navegador, pois podem ser bloqueados. Criar Pop-up próprio do sistema.
 
-## 🟡 Fase 2: Inteligência de Negócio e Painéis Admin
+## 🟡 Inteligência de Negócio e Painéis Admin
 Implementação do Score dinâmico e refinamento da análise de dados.
 
 - [ ] **Cadastro de BID:**
@@ -33,7 +33,7 @@ Implementação do Score dinâmico e refinamento da análise de dados.
 - [ ] **Histórico Admin:**
     - [ ] Implementar filtros avançados: Data, Criador do BID (Meus BIDs), Tipo de Operação e Ordenação Cronológica.
 
-## 🟠 Fase 3: Experiência do Transportador
+## 🟠 Experiência do Transportador
 Refinamento da jornada de quem oferta os lances.
 
 - [ ] **Card de BID:**
@@ -45,7 +45,7 @@ Refinamento da jornada de quem oferta os lances.
 - [ ] **Histórico e Consistência:**
     - [ ] Auditar e corrigir divergência de dados entre diferentes contas de transportadores.
 
-## 🔵 Fase 4: Comunicação e Notificações (E-mail & Canais)
+## 🔵 Comunicação e Notificações (E-mail & Canais)
 Automação de alertas seguindo normas de privacidade (LGPD).
 
 - [ ] **Lógica de E-mails para Admins:**
@@ -63,7 +63,7 @@ Automação de alertas seguindo normas de privacidade (LGPD).
 - [ ] **Integração de Canais:**
     - [ ] Criar bot/canal de notificações em tempo real (Telegram ou WhatsApp).
 
-## 🔴 Fase 5: Documentação e Portfólio
+## 🔴 Documentação e Portfólio
 Finalização para apresentação profissional e deploy.
 
 - [ ] **Geração de PDF:**
