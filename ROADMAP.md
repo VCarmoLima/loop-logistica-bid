@@ -14,8 +14,8 @@ Foco em usabilidade e navegação do sistema.
     - [x] Reservar espaço superior para o logotipo da empresa/projeto.
 - [ ] **Tematização:**
     - [ ] Implementar seletor de tema (Light/Dark Mode). Definir padrão como Light.
-- [ ] **Ajustes de Branding:**
-    - [ ] Padronização de termos: Remover nomenclaturas genéricas como "(Standard)" do Painel de Aprovação.
+- [x] **Ajustes de Branding:**
+    - [x] Padronização de termos: Remover nomenclaturas genéricas como "(Standard)" do Painel de Aprovação.
 - [ ] **Ajuste Pop-ups/Notificações**
     - [ ] Não utilizar Pop-ups do navegador, pois podem ser bloqueados. Criar Pop-up próprio do sistema.
 
