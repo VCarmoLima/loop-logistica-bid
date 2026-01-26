@@ -80,7 +80,7 @@ O projeto foi migrado de uma arquitetura legada (Python) para uma stack moderna 
 ├── tsconfig.json           # Configuração do TypeScript
 ├── README.md               # Documentação Oficial
 └── ROADMAP.md              # Roadmap do Projeto
-
+```
 ---
 
 ## Instalação e Configuração
