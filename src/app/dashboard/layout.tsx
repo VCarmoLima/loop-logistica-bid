@@ -4,12 +4,122 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
-import { LayoutDashboard, FileSearch, Users, LogOut, PlusCircle, Truck, ShieldCheck, History, UserCircle } from 'lucide-react'
+import { Montserrat } from 'next/font/google'
+import {
+  LayoutDashboard, FileSearch, Users, LogOut, PlusCircle,
+  Truck, ShieldCheck, History, UserCircle, Pin, PinOff
+} from 'lucide-react'
+
+// CONFIGURANDO A FONTE DO LOGO
+const logoFont = Montserrat({
+  subsets: ['latin'],
+  weight: ['600', '800'],
+  display: 'swap',
+})
+
+// --- HELPER CLASSES ---
+
+// Texto do Menu: Adicionei controle de margem esquerda (ml-3 -> ml-0)
+const getMenuTextClass = (isOpen: boolean) => {
+  return `transition-all ease-in-out whitespace-nowrap overflow-hidden
+    ${isOpen
+      ? 'opacity-100 max-w-[200px] translate-x-0 ml-3 duration-500' // ml-3 aqui (substitui o gap)
+      : 'opacity-0 max-w-0 -translate-x-5 ml-0 duration-300'        // ml-0 para limpar espaço
+    }`
+}
+
+const getHeaderOpenClass = (isOpen: boolean) => {
+  return `absolute inset-0 flex flex-col items-center justify-center transition-all ease-out whitespace-nowrap
+    ${isOpen
+      ? 'opacity-100 scale-100 duration-500 delay-200'
+      : 'opacity-0 scale-90 duration-200 pointer-events-none'
+    }`
+}
+
+const getHeaderIconClass = (isOpen: boolean) => {
+  return `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center transition-all ease-out
+    ${!isOpen
+      ? 'opacity-100 scale-100 duration-500 delay-300'
+      : 'opacity-0 scale-50 duration-100 pointer-events-none'
+    }`
+}
+
+const getUserOpenClass = (isOpen: boolean) => {
+  return `flex flex-col items-center transition-all ease-in-out absolute w-full
+    ${isOpen
+      ? 'opacity-100 scale-100 duration-500 delay-200'
+      : 'opacity-0 scale-90 duration-200 pointer-events-none'} 
+  `
+}
+
+const getUserClosedClass = (isOpen: boolean) => {
+  return `transition-all ease-in-out absolute
+    ${!isOpen
+      ? 'opacity-100 scale-100 duration-500 delay-300'
+      : 'opacity-0 scale-50 duration-100 pointer-events-none'} 
+  `
+}
+
+const SectionTitle = ({ label, isOpen, delayMs = 0, isFirst = false }: { label: string, isOpen: boolean, delayMs?: number, isFirst?: boolean }) => (
+  <div
+    className={`px-3 overflow-hidden transition-all duration-500 ease-in-out
+      ${isOpen
+        ? `max-h-10 opacity-100 ${isFirst ? 'mt-2' : 'mt-6'} mb-2`
+        : 'max-h-0 opacity-0 mt-0 mb-0 duration-300'} 
+    `}
+    style={{ transitionDelay: isOpen ? `${delayMs}ms` : '0ms' }}
+  >
+    <div className="flex items-center justify-center">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap border-b border-gray-100 pb-1 w-full text-center">
+        {label}
+      </p>
+    </div>
+  </div>
+)
+
+const NavLink = ({ href, icon: Icon, label, isOpen, isActive, isSpecial = false, delayMs = 0 }: any) => {
+  return (
+    <Link
+      href={href}
+      // CORREÇÃO DA "SAMBADA":
+      // 1. Removido 'gap-3' e 'justify-center'.
+      // 2. Usamos padding dinâmico: 'px-3' (Aberto) vs 'pl-[26px]' (Fechado).
+      //    pl-[26px] centraliza visualmente o ícone na barra de 80px (w-20).
+      className={`group flex items-center py-2.5 rounded-lg text-sm font-medium transition-all duration-300
+        ${isOpen ? 'px-3' : 'pl-[26px] pr-0'} 
+        ${isSpecial
+          ? (isActive ? 'bg-red-900 text-white shadow-md' : 'text-red-900 bg-red-50 hover:bg-red-100')
+          : (isActive ? 'bg-red-50 text-red-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900')
+        }
+      `}
+      title={!isOpen ? label : ''}
+    >
+      <Icon size={18} className={`flex-shrink-0 transition-all duration-500 ${!isOpen ? 'scale-110' : ''}`} />
+
+      <span
+        className={getMenuTextClass(isOpen)}
+        style={{ transitionDelay: isOpen ? `${delayMs}ms` : '0ms' }}
+      >
+        {label}
+      </span>
+    </Link>
+  )
+}
+
+// --- COMPONENTE PRINCIPAL ---
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
+
+  const [isPinned, setIsPinned] = useState(true)
+  const [isHovered, setIsHovered] = useState(false)
+
+  const [logoError, setLogoError] = useState(false)
+  const [iconError, setIconError] = useState(false)
+
+  const isOpen = isPinned || isHovered
 
   useEffect(() => {
     const session = Cookies.get('bid_session')
@@ -30,166 +140,195 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isAdmin = user.type === 'admin'
   const isMaster = user.role === 'master'
 
-  // ESTILO DE TÍTULO DE SEÇÃO REFINADO
-  // Mudanças: mt-6 (espaço topo), text-gray-500 (mais escuro), font-bold (menos pesado que extra), tracking-wider (espaçamento letras)
-  const sectionTitleStyle = "px-3 mb-2 mt-6 text-xs font-bold text-gray-500 uppercase tracking-wider"
+  const sidebarClass = `fixed inset-y-0 left-0 z-20 bg-white border-r border-gray-200 flex flex-col shadow-sm
+    transition-all duration-700 cubic-bezier(0.25, 0.8, 0.25, 1) 
+    ${isOpen ? 'w-64' : 'w-20'}
+  `
+
+  let delayCounter = 100
+  const step = 25
+  const getDelay = () => {
+    const current = delayCounter
+    delayCounter += step
+    return current
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col fixed h-full z-10">
-        
-        {/* Header Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-gray-100">
-          <span className="text-xl font-extrabold text-gray-900 tracking-tight">
-            BID <span className="text-red-600">Logístico</span>
-          </span>
-        </div>
 
-        {/* User Info */}
-        <div className="p-6 border-b border-gray-50">
-          <div className="flex items-center justify-between">
-             <div className="overflow-hidden">
-                <p className="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wide">
-                    {isAdmin ? (isMaster ? 'Master Admin' : 'Analista') : 'Transportadora'}
-                </p>
-                <p className="text-sm font-bold text-gray-900 truncate" title={user.nome}>{user.nome}</p>
-             </div>
-             {isMaster && <ShieldCheck size={16} className="text-red-900 flex-shrink-0" />}
+      {/* --- SIDEBAR --- */}
+      <aside
+        className={sidebarClass}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+
+        {/* 1. Header */}
+        <div className="h-24 w-full relative border-b border-gray-100 bg-white z-20 overflow-hidden select-none flex-shrink-0">
+
+          <div className={getHeaderOpenClass(isOpen)}>
+            {!logoError ? (
+              <>
+                <img
+                  src="/images/logo.webp"
+                  alt="Logo"
+                  className="h-8 w-auto object-contain mb-1"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    setLogoError(true);
+                  }}
+                />
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
+                  Sistema de BIDs
+                </span>
+              </>
+            ) : (
+              <div className="text-center">
+                <div className={`flex items-baseline justify-center leading-none ${logoFont.className}`}>
+                  <span className="text-2xl font-extrabold text-gray-800 tracking-tight">BID</span>
+                  <span className="text-2xl font-semibold text-red-600 ml-1">Logístico</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] block mt-1">
+                  Gestão de Fretes
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className={getHeaderIconClass(isOpen)}>
+            {!iconError ? (
+              <img
+                src="/images/icon.png"
+                alt="Icon"
+                className="h-8 w-8 object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  setIconError(true);
+                }}
+              />
+            ) : (
+              <Truck className="text-red-600" size={24} />
+            )}
+          </div>
+
+          <div className={`absolute right-2 top-2 transition-all duration-300 ${isOpen ? 'opacity-100 delay-200' : 'opacity-0 hidden'}`}>
+            <button
+              onClick={() => setIsPinned(!isPinned)}
+              className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+              title={isPinned ? "Desafixar" : "Fixar"}
+            >
+              {isPinned ? <Pin size={12} className="fill-current" /> : <PinOff size={12} />}
+            </button>
           </div>
         </div>
 
-        {/* Menu Principal */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          
-          {/* Link Principal (Sem título de seção) */}
-          <Link 
+        {/* 2. User Info */}
+        <div className="h-20 border-b border-gray-50 transition-all duration-500 flex flex-col items-center justify-center relative overflow-hidden flex-shrink-0">
+
+          <div className={getUserOpenClass(isOpen)}>
+            <div className="text-center w-full px-2">
+              <p className="text-sm font-bold text-gray-900 truncate" title={user.nome}>{user.nome}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5 flex items-center justify-center gap-1">
+                {isAdmin ? (isMaster ? 'Master Admin' : 'Analista') : 'Transportadora'}
+                {isMaster && <ShieldCheck size={12} className="text-red-900" />}
+              </p>
+            </div>
+          </div>
+
+          <div className={getUserClosedClass(isOpen)}>
+            <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-red-700 font-bold text-sm border border-red-100 shadow-sm select-none">
+              {user.nome.charAt(0).toUpperCase()}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Navegação */}
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-100 select-none">
+
+          <SectionTitle label="Operacional" isOpen={isOpen} delayMs={getDelay()} isFirst={true} />
+
+          <NavLink
             href="/dashboard"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              pathname === '/dashboard' 
-                ? 'bg-red-50 text-red-700' 
-                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-            }`}
-          >
-            {isAdmin ? <LayoutDashboard size={18} /> : <Truck size={18} />}
-            {isAdmin ? 'Painel Geral' : 'Mural de Oportunidades'}
-          </Link>
+            icon={isAdmin ? LayoutDashboard : Truck}
+            label={isAdmin ? 'Painel Geral' : 'Mural de Oportunidades'}
+            isOpen={isOpen}
+            isActive={pathname === '/dashboard'}
+            delayMs={getDelay()}
+          />
 
           {isAdmin && (
             <>
-              <Link 
-                href="/dashboard/novo-bid"
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === '/dashboard/novo-bid' 
-                    ? 'bg-red-50 text-red-700' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <PlusCircle size={18} />
-                Novo BID
-              </Link>
+              <NavLink href="/dashboard/novo-bid" icon={PlusCircle} label="Novo BID" isOpen={isOpen} isActive={pathname === '/dashboard/novo-bid'} delayMs={getDelay()} />
+              <NavLink href="/dashboard/em-analise" icon={FileSearch} label="Em Análise" isOpen={isOpen} isActive={pathname === '/dashboard/em-analise'} delayMs={getDelay()} />
 
-              <Link 
-                href="/dashboard/em-analise"
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === '/dashboard/em-analise' 
-                    ? 'bg-red-50 text-red-700' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <FileSearch size={18} />
-                Em Análise
-              </Link>
-
-              {/* Seção Master */}
               {isMaster && (
-                <div>
-                    <p className={sectionTitleStyle}>Área Master</p>
-                    <Link 
+                <>
+                  <SectionTitle label="Área Master" isOpen={isOpen} delayMs={getDelay()} />
+                  <NavLink
                     href="/dashboard/aprovacao"
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                        pathname === '/dashboard/aprovacao' 
-                        ? 'bg-red-900 text-white shadow-md' 
-                        : 'text-red-900 bg-red-50 hover:bg-red-100' 
-                    }`}
-                    >
-                    <ShieldCheck size={18} />
-                    Aprovação
-                    </Link>
-                </div>
+                    icon={ShieldCheck}
+                    label="Aprovação"
+                    isOpen={isOpen}
+                    isActive={pathname === '/dashboard/aprovacao'}
+                    isSpecial={true}
+                    delayMs={getDelay()}
+                  />
+                </>
               )}
-              
-              {/* Seção Gestão */}
-              <div>
-                 <p className={sectionTitleStyle}>Gestão</p>
-                 <Link 
-                    href="/dashboard/historico"
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                        pathname === '/dashboard/historico' 
-                        ? 'bg-red-50 text-red-700' 
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                 >
-                    <History size={18} /> Histórico
-                 </Link>
-                 <Link 
-                    href="/dashboard/gestao-acessos"
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                        pathname === '/dashboard/gestao-acessos' 
-                        ? 'bg-red-50 text-red-700' 
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                 >
-                    <Users size={18} /> Acessos
-                 </Link>
-              </div>
+
+              <SectionTitle label="Gestão" isOpen={isOpen} delayMs={getDelay()} />
+              <NavLink href="/dashboard/historico" icon={History} label="Histórico" isOpen={isOpen} isActive={pathname === '/dashboard/historico'} delayMs={getDelay()} />
+              <NavLink href="/dashboard/gestao-acessos" icon={Users} label="Acessos" isOpen={isOpen} isActive={pathname === '/dashboard/gestao-acessos'} delayMs={getDelay()} />
             </>
           )}
 
-          {/* MENUS DA TRANSPORTADORA (CORREÇÃO AQUI) */}
           {!isAdmin && (
-             <div>
-                <p className={sectionTitleStyle}>Histórico de BIDs</p>
-                <Link 
-                   href="/dashboard/historico"
-                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                       pathname === '/dashboard/historico' 
-                       ? 'bg-red-50 text-red-700' 
-                       : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                   }`}
-                >
-                   <History size={18} />Resultados
-                </Link>
-             </div>
+            <>
+              <SectionTitle label="Minhas Cargas" isOpen={isOpen} delayMs={getDelay()} />
+              <NavLink href="/dashboard/historico" icon={History} label="Resultados" isOpen={isOpen} isActive={pathname === '/dashboard/historico'} delayMs={getDelay()} />
+            </>
           )}
 
         </nav>
 
-        {/* Footer: Minha Conta + Logout */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50/30">
-             <Link 
-                href="/dashboard/minha-conta"
-                className={`flex items-center gap-3 px-3 py-2 mb-2 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === '/dashboard/minha-conta' 
-                    ? 'bg-white text-red-700 shadow-sm border border-gray-200' 
-                    : 'text-gray-700 hover:bg-white hover:text-gray-900 hover:shadow-sm'
-                }`}
-             >
-                <UserCircle size={18} /> Minha Conta
-             </Link>
+        {/* 4. Footer */}
+        <div className="p-4 border-t border-gray-100 bg-gray-50/30 select-none flex-shrink-0">
+          <NavLink
+            href="/dashboard/minha-conta"
+            icon={UserCircle}
+            label="Minha Conta"
+            isOpen={isOpen}
+            isActive={pathname === '/dashboard/minha-conta'}
+            delayMs={delayCounter + step}
+          />
 
-            <button 
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-2 w-full text-left text-gray-500 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-lg text-sm font-medium transition-all"
+          <button
+            onClick={handleLogout}
+            // APLICANDO A MESMA CORREÇÃO DE SAMBADA NO BOTÃO DE SAIR
+            className={`group flex items-center py-2 w-full rounded-lg text-sm font-medium transition-all duration-300 text-gray-500 hover:text-red-600 hover:bg-white hover:shadow-sm mt-1 
+                ${isOpen ? 'px-3' : 'pl-[26px] pr-0'}`
+            }
+            title={!isOpen ? "Sair" : ""}
+          >
+            <LogOut size={18} className="flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+            <span
+              className={getMenuTextClass(isOpen)}
+              style={{ transitionDelay: isOpen ? `${delayCounter + (step * 2)}ms` : '0ms' }}
             >
-                <LogOut size={18} />
-                Sair do Sistema
-            </button>
+              Sair do Sistema
+            </span>
+          </button>
         </div>
       </aside>
 
-      <main className="flex-1 ml-64 p-8">
+      {/* --- CONTEÚDO PRINCIPAL --- */}
+      <main
+        className={`flex-1 p-8 transition-all duration-700 cubic-bezier(0.25, 0.8, 0.25, 1)
+            ${isOpen ? 'ml-64' : 'ml-20'} 
+        `}
+      >
         <div className="max-w-6xl mx-auto">
-            {children}
+          {children}
         </div>
       </main>
     </div>
