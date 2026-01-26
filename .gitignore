@@ -48,4 +48,5 @@ next-env.d.ts
 node_modules/
 .next/
 
-create-next-app
+.idea
+.idea/
