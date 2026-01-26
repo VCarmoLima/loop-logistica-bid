@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { Montserrat } from 'next/font/google'
 import { Lock, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
-import Cookies from 'js-cookie'
 
-// Configuração da Fonte (Igual ao resto do projeto)
+// CONFIGURANDO A FONTE DO LOGO (Igual ao Login)
 const logoFont = Montserrat({
     subsets: ['latin'],
     weight: ['600', '800'],
@@ -22,6 +21,8 @@ const supabase = createClient(
 
 export default function UpdatePasswordPage() {
     const router = useRouter()
+
+    // ESTADOS
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -29,8 +30,10 @@ export default function UpdatePasswordPage() {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
 
-    // O Supabase detecta automaticamente a sessão pelo hash da URL (#access_token=...)
-    // Não precisamos fazer nada complexo aqui, apenas deixar o cliente carregar.
+    // ESTADO DO LOGO (Para manter o padrão do Login)
+    const [logoError, setLogoError] = useState(false)
+
+    // O Supabase detecta a sessão automaticamente pelo hash da URL vinda do email
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -49,24 +52,22 @@ export default function UpdatePasswordPage() {
         setMessage(null)
 
         try {
-            // Atualiza a senha do usuário logado (via link mágico)
-            const { data, error } = await supabase.auth.updateUser({
+            // Atualiza a senha do usuário já autenticado pelo link mágico
+            const { error } = await supabase.auth.updateUser({
                 password: password
             })
 
             if (error) throw error
 
-            // Sucesso!
             setMessage({ type: 'success', text: 'Senha atualizada com sucesso!' })
 
-            // Se quiser, pode renovar o cookie ou apenas redirecionar
-            // Aguarda 1.5s para o usuário ler a mensagem e redireciona para Login ou Dashboard
+            // Redireciona após 2 segundos
             setTimeout(() => {
-                router.push('/') // Manda de volta para o login para garantir
+                router.push('/')
             }, 2000)
 
         } catch (err: any) {
-            setMessage({ type: 'error', text: 'Erro ao atualizar senha. O link pode ter expirado.' })
+            setMessage({ type: 'error', text: 'Erro ao atualizar. O link pode ter expirado.' })
         } finally {
             setLoading(false)
         }
@@ -76,26 +77,42 @@ export default function UpdatePasswordPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
             <div className="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
 
-                {/* Barra de Topo */}
+                {/* Barra de Topo (Identidade Visual) */}
                 <div className="h-2 w-full bg-gradient-to-r from-red-600 to-red-800" />
 
                 <div className="p-8">
 
-                    {/* Cabeçalho */}
+                    {/* CABEÇALHO (Logo Inteligente) */}
                     <div className="flex flex-col items-center justify-center mb-8 select-none">
-                        {/* Logo Texto (Fallback para garantir visual) */}
-                        <div className="text-center">
-                            <div className={`flex items-baseline justify-center leading-none ${logoFont.className}`}>
-                                <span className="text-3xl font-extrabold text-gray-800 tracking-tight">BID</span>
-                                <span className="text-3xl font-semibold text-red-600 ml-1">Logístico</span>
+                        {!logoError ? (
+                            <>
+                                <img
+                                    src="/images/logo.webp"
+                                    alt="Logo"
+                                    className="h-10 w-auto object-contain mb-2"
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        setLogoError(true);
+                                    }}
+                                />
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em]">
+                                    Definir Nova Senha
+                                </span>
+                            </>
+                        ) : (
+                            <div className="text-center">
+                                <div className={`flex items-baseline justify-center leading-none ${logoFont.className}`}>
+                                    <span className="text-3xl font-extrabold text-gray-800 tracking-tight">BID</span>
+                                    <span className="text-3xl font-semibold text-red-600 ml-1">Logístico</span>
+                                </div>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] block mt-2">
+                                    Definir Nova Senha
+                                </span>
                             </div>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] block mt-2">
-                                Definir Nova Senha
-                            </span>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Mensagens */}
+                    {/* MENSAGENS DE FEEDBACK */}
                     {message && (
                         <div className={`mb-6 p-3 rounded-md flex items-center gap-2 text-sm border animate-in fade-in slide-in-from-top-2
               ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}
@@ -122,7 +139,7 @@ export default function UpdatePasswordPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none"
                                 >
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
@@ -152,10 +169,17 @@ export default function UpdatePasswordPage() {
                                     ? 'bg-red-400 cursor-not-allowed'
                                     : 'bg-red-600 hover:bg-red-700 hover:shadow-lg hover:-translate-y-0.5'}`}
                         >
-                            {loading ? <Loader2 className="animate-spin" size={20} /> : <>ATUALIZAR SENHA <ArrowRight size={18} /></>}
+                            {loading ? <Loader2 className="animate-spin" size={20} /> : <>SALVAR NOVA SENHA <ArrowRight size={18} /></>}
                         </button>
 
                     </form>
+
+                    {/* RODAPÉ MANTIDO */}
+                    <div className="mt-8 text-center border-t border-gray-100 pt-4">
+                        <p className="text-xs text-gray-400">
+                            © {new Date().getFullYear()} VCarmoLima — Todos os direitos reservados.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
