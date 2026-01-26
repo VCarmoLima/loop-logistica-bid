@@ -2,20 +2,32 @@ name: Roadmap Dashboard
 
 on:
   push:
+    branches:
+      - main
     paths:
-      - "ROADMAP.md"
+      - ROADMAP.md
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   generate-dashboard:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Generate SVG Progress
+        shell: bash
         run: |
-          TOTAL=$(grep -o "\- \[.\]" ROADMAP.md | wc -l)
-          DONE=$(grep -o "\- \[x\]" ROADMAP.md | wc -l)
+          set -e
+
+          # Count tasks
+          TOTAL=$(grep -o "\- \[.\]" ROADMAP.md | wc -l || echo 0)
+          DONE=$(grep -o "\- \[x\]" ROADMAP.md | wc -l || echo 0)
 
           if [ "$TOTAL" -eq 0 ]; then
             PERCENT=0
@@ -23,8 +35,9 @@ jobs:
             PERCENT=$((100 * DONE / TOTAL))
           fi
 
-          BAR_WIDTH=400
-          FILLED=$((BAR_WIDTH * PERCENT / 100))
+          # SVG dimensions
+          BAR_WIDTH=540
+          FILLED_WIDTH=$((BAR_WIDTH * PERCENT / 100))
 
           mkdir -p assets
 
@@ -44,36 +57,16 @@ jobs:
                 fill: #d1d5db;
               }
             </style>
-          
-            <!-- Title -->
+
             <text x="30" y="30" class="title">📊 Progresso do Roadmap</text>
             <text x="30" y="52" class="subtitle">Sistema de BIDs</text>
-          
-            <!-- Background bar -->
-            <rect x="30" y="75" width="540" height="18" rx="9" fill="#1f2933"/>
-          
-            <!-- Progress bar -->
-            <rect x="30" y="75" width="$((540 * PERCENT / 100))" height="18" rx="9" fill="#22c55e"/>
-          
-            <!-- Label -->
+
+            <rect x="30" y="75" width="$BAR_WIDTH" height="18" rx="9" fill="#1f2933"/>
+            <rect x="30" y="75" width="$FILLED_WIDTH" height="18" rx="9" fill="#22c55e"/>
+
             <text x="30" y="118" class="label">
               $DONE de $TOTAL tarefas concluídas — $PERCENT%
             </text>
-          </svg>
-          EOF
-
-          <svg width="500" height="90" viewBox="0 0 500 90" xmlns="http://www.w3.org/2000/svg">
-            <style>
-              .title { font: bold 18px sans-serif; fill: #111 }
-              .label { font: 14px sans-serif; fill: #333 }
-            </style>
-
-            <text x="20" y="25" class="title">Roadmap Progress</text>
-
-            <rect x="20" y="40" width="$BAR_WIDTH" height="20" rx="10" fill="#e5e7eb"/>
-            <rect x="20" y="40" width="$FILLED" height="20" rx="10" fill="#22c55e"/>
-
-            <text x="20" y="80" class="label">$DONE de $TOTAL tarefas concluídas ($PERCENT%)</text>
           </svg>
           EOF
 
@@ -82,5 +75,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add assets/roadmap-progress.svg
-          git commit -m "chore: update roadmap dashboard"
+          git commit -m "chore: update roadmap dashboard" || echo "No changes to commit"
           git push
