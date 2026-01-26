@@ -32,6 +32,7 @@ Implementação do Score dinâmico e refinamento da análise de dados.
     - [ ] Criar sistema de templates de justificativa para escolha do vencedor (com campo livre opcional).
 - [ ] **Histórico Admin:**
     - [ ] Implementar filtros avançados: Data, Criador do BID (Meus BIDs), Tipo de Operação e Ordenação Cronológica.
+    - [ ] Implementar download de PDFs em massa, de acordo com filtros.
 
 ## 🟠 Experiência do Transportador
 Refinamento da jornada de quem oferta os lances.
