@@ -71,6 +71,7 @@ Finalização para apresentação profissional e deploy.
 - [ ] **GitHub:**
     - [ ] Atualizar Tags e descrição do repositório.
     - [ ] Criar `README.md` de alto nível com prints, fluxo de funcionamento e tecnologias utilizadas.
+    - [ ] Organizar repositório.
 
 ---
 **Legenda:**
