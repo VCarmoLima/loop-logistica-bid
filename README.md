@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistema de BID Logístico (SaaS Enterprise)
 
-## Getting Started
+![Next.js](https://img.shields.io/badge/Next.js-14-black)
+![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-cyan)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-First, run the development server:
+> **Plataforma Enterprise de Leilão Reverso para Logística.** > Centralize cotações, garanta compliance na escolha de transportadoras e audite todo o processo em tempo real.
 
+---
+
+## Screenshots
+
+### Acesso Seguro & Identidade
+_Login unificado para Administradores e Transportadoras com autenticação via Supabase Auth._
+![Login Screen](./screenshots/login.png)
+
+### Painel Admin
+_Painel amigável com funções de criação, análise, homologação e histórico de auditoria._
+![Painel Admin](./screenshots/analise.png)
+
+---
+
+## Sobre o Projeto
+
+O **Sistem de BID Logístico** moderniza o processo de contratação de fretes (Spot e Dedicados), substituindo e-mails e WhatsApp por um ambiente de **Leilão Reverso** seguro e transparente.
+
+### Principais Diferenciais:
+* **Realtime Bidding:** O mural atualiza instantaneamente quando um concorrente dá um lance, sem precisar recarregar a página (Supabase Realtime).
+* **Segurança de Dados (RLS):** Implementação de *Row Level Security* no banco de dados. Uma transportadora nunca vê os dados da outra, e hackers não conseguem alterar dados sensíveis.
+* **Score Inteligente:** Algoritmo de decisão que pondera **Preço (70%)** e **Prazo (30%)** para sugerir o melhor custo-benefício.
+* **Auditoria Automática:** Geração de PDF oficial ("Compliance Report") ao final de cada processo, contendo a timeline completa e o "Livro de Ofertas".
+* **Gamificação:** Feedback visual imediato ("Você é o Líder" vs "Oferta Superada") e alertas de competitividade para lances ruins.
+
+---
+
+## Stack Tecnológica
+
+O projeto foi migrado de uma arquitetura legada (Python) para uma stack moderna e escalável:
+
+* **Frontend:** [Next.js 14](https://nextjs.org/) (App Router, Server Components).
+* **Estilização:** [Tailwind CSS](https://tailwindcss.com/) + [Lucide Icons](https://lucide.dev/).
+* **Backend & Database:** [Supabase](https://supabase.com/) (PostgreSQL).
+* **Autenticação:** Supabase Auth (Email/Password).
+* **Infraestrutura:** Vercel (Frontend) + Supabase Cloud (Backend).
+* **PDF Generation:** `jspdf` + `jspdf-autotable` (Client-side generation).
+
+---
+
+## Instalação e Configuração
+
+### Pré-requisitos
+* Node.js 18+ instalado.
+* Conta no Supabase (Projeto criado).
+
+### 1. Clone o repositório
+```bash
+git clone [https://github.com/VCarmoLima/logistica-bid.git](https://github.com/VCarmoLima/logistica-bid.git)
+cd logistica-bid
+```
+### 2. Instale as dependências
+```bash
+npm install
+```
+### 3. Configure as variáveis de ambiente
+Crie um arquivo .env na raiz do projeto e adicione suas chaves do Supabase:
+```bash
+NEXT_PUBLIC_SUPABASE_URL="sua_url_do_supabase"
+NEXT_PUBLIC_SUPABASE_KEY="sua_chave_anon_publica"
+EMAIL_USER="seu_email_para_envio@gmail.com"
+EMAIL_PASS="sua_senha_de_app_gmail"
+```
+### 4. Execute o projeto
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+### 5. Acesse o aplicativo
+Abra o navegador e acesse [`http://localhost:3000`](http://localhost:3000).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estrutura de Permissões (RBAC)
+O sistema possui 3 níveis de acesso distintos, protegidos via Banco de Dados (Policies):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Master Admin: Acesso total. Pode aprovar BIDs finais, gerenciar usuários (Admins/Transportadoras) e ver logs de auditoria.
 
-## Learn More
+2. Analista (Standard): Pode criar BIDs, acompanhar o leilão e selecionar vencedores (mas não aprovar finalização).
 
-To learn more about Next.js, take a look at the following resources:
+3. Transportadora: Acesso restrito apenas ao "Mural de Oportunidades" e seu próprio "Histórico". Não vê dados de concorrentes.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Melhorias
+Para visualizar as funcionalidades planejadas e o progresso do desenvolvimento, consulte o arquivo [ROADMAP.md](https://github.com/VCarmoLima/logistica-bid/blob/main/ROADMAP.md).
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Segurança e Privacidade
+Este repositório contém uma versão demonstrativa. Logos e dados reais de empresas foram removidos ou ofuscados para proteção de propriedade intelectual e dados sensíveis.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Licença
+
+Este projeto está licenciado sob a licença MIT. Consulte o arquivo LICENSE para mais detalhes.
+
+Direitos reservados a [VCarmoLima](https://www.linkedin.com/in/viniciusdocarmolima/).
