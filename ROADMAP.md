@@ -2,6 +2,14 @@
 
 Este documento detalha as etapas de desenvolvimento, melhorias de interface, implementação de novas lógicas de negócio e profissionalização do sistema de leilão de fretes (BIDs).
 
+---
+
+## 📊 Progresso do Projeto
+
+![Progresso do Roadmap](./assets/roadmap-progress.svg)
+
+---
+
 ## 🟢 Interface (UX/UI) e Estrutura Base
 Foco em usabilidade e navegação do sistema.
 
@@ -22,18 +30,29 @@ Foco em usabilidade e navegação do sistema.
 ## 🟡 Inteligência de Negócio e Painéis Admin
 Implementação do Score dinâmico e refinamento da análise de dados.
 
-- [ ] **Cadastro de BID:**
+- [ ] **Painel Geral:**
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+- [ ] **Novo BID:**
     - [ ] Ordenação lógica da lista de pátios.
     - [ ] **Termômetro de Importância:** Criar slider dinâmico para peso Preço vs. Prazo (Padrão 70/30).
     - [ ] Implementar *Double Check* (confirmação) antes de publicar o BID.
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 - [ ] **Monitoramento e Análise:**
     - [ ] Exibir líderes em tempo real por: Preço, Prazo e Score (ponderado).
     - [ ] Ajustar textos dos rankings para evitar abreviações.
     - [ ] Incluir coluna de "Prazo" na tela de seleção de vencedor.
     - [ ] Criar sistema de templates de justificativa para escolha do vencedor (com campo livre opcional).
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+- [ ] **Aprovação Final:**
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 - [ ] **Histórico Admin:**
     - [ ] Implementar filtros avançados: Data, Criador do BID (Meus BIDs), Tipo de Operação e Ordenação Cronológica.
     - [ ] Implementar download de PDFs em massa, de acordo com filtros.
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+- [ ] **Acessos:**
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+- [ ] **Minha Conta:**
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 
 ## 🟠 Experiência do Transportador
 Refinamento da jornada de quem oferta os lances.
@@ -42,10 +61,14 @@ Refinamento da jornada de quem oferta os lances.
     - [ ] Ajustar layout de endereço para melhor leitura.
     - [ ] Adicionar botão de "Informações Detalhadas" (Imagem inteira do veículo, endereços completos não apenas cidade).
     - [ ] Tornar o Card dinâmico: destacar Preço ou Prazo conforme o "Termômetro" definido pelo Admin.
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 - [ ] **Segurança de Lance:**
     - [ ] Implementar *Double Check* no envio de lances para evitar erros de digitação (ex: R$ 50,00 vs R$ 5.000,00).
 - [ ] **Histórico e Consistência:**
     - [ ] Auditar e corrigir divergência de dados entre diferentes contas de transportadores.
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+ - [ ] **Minha Conta:**
+    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 
 ## 🔵 Comunicação e Notificações (E-mail & Canais)
 Automação de alertas seguindo normas de privacidade (LGPD).
