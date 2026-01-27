@@ -7,7 +7,7 @@ import Cookies from 'js-cookie'
 import { Montserrat } from 'next/font/google'
 import {
   LayoutDashboard, FileSearch, Users, LogOut, PlusCircle,
-  Truck, ShieldCheck, History, UserCircle, Pin, PinOff
+  Truck, ShieldCheck, History, UserCircle, Pin, PinOff, Menu, X
 } from 'lucide-react'
 
 // CONFIGURANDO A FONTE DO LOGO
@@ -19,12 +19,11 @@ const logoFont = Montserrat({
 
 // --- HELPER CLASSES ---
 
-// Texto do Menu: Adicionei controle de margem esquerda (ml-3 -> ml-0)
 const getMenuTextClass = (isOpen: boolean) => {
   return `transition-all ease-in-out whitespace-nowrap overflow-hidden
     ${isOpen
-      ? 'opacity-100 max-w-[200px] translate-x-0 ml-3 duration-500' // ml-3 aqui (substitui o gap)
-      : 'opacity-0 max-w-0 -translate-x-5 ml-0 duration-300'        // ml-0 para limpar espaço
+      ? 'opacity-100 max-w-[200px] translate-x-0 ml-3 duration-500'
+      : 'opacity-0 max-w-0 -translate-x-5 ml-0 duration-300'
     }`
 }
 
@@ -77,14 +76,11 @@ const SectionTitle = ({ label, isOpen, delayMs = 0, isFirst = false }: { label: 
   </div>
 )
 
-const NavLink = ({ href, icon: Icon, label, isOpen, isActive, isSpecial = false, delayMs = 0 }: any) => {
+const NavLink = ({ href, icon: Icon, label, isOpen, isActive, isSpecial = false, delayMs = 0, onClick }: any) => {
   return (
     <Link
       href={href}
-      // CORREÇÃO DA "SAMBADA":
-      // 1. Removido 'gap-3' e 'justify-center'.
-      // 2. Usamos padding dinâmico: 'px-3' (Aberto) vs 'pl-[26px]' (Fechado).
-      //    pl-[26px] centraliza visualmente o ícone na barra de 80px (w-20).
+      onClick={onClick} // Fecha o menu mobile ao clicar
       className={`group flex items-center py-2.5 rounded-lg text-sm font-medium transition-all duration-300
         ${isOpen ? 'px-3' : 'pl-[26px] pr-0'} 
         ${isSpecial
@@ -113,13 +109,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
 
+  // ESTADOS
   const [isPinned, setIsPinned] = useState(true)
   const [isHovered, setIsHovered] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false) // Novo estado para Mobile
 
   const [logoError, setLogoError] = useState(false)
   const [iconError, setIconError] = useState(false)
 
-  const isOpen = isPinned || isHovered
+  // Lógica de "Aberto": 
+  // No Desktop: Pin ou Hover.
+  // No Mobile: Apenas se o menu mobile estiver ativado.
+  const isDesktopOpen = isPinned || isHovered
+
+  // O "isOpen" visual para os componentes internos (Links, Textos):
+  // Se estiver no mobile e aberto -> TRUE. Se estiver no desktop e (pin ou hover) -> TRUE.
+  const isOpen = isMobileOpen || isDesktopOpen
 
   useEffect(() => {
     const session = Cookies.get('bid_session')
@@ -140,11 +145,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isAdmin = user.type === 'admin'
   const isMaster = user.role === 'master'
 
-  const sidebarClass = `fixed inset-y-0 left-0 z-20 bg-white border-r border-gray-200 flex flex-col shadow-sm
-    transition-all duration-700 cubic-bezier(0.25, 0.8, 0.25, 1) 
-    ${isOpen ? 'w-64' : 'w-20'}
+  // SIDEBAR CSS RESPONSIVO
+  // Mobile: w-64 fixo, transform controla visibilidade (-translate-x-full = escondido)
+  // Desktop (md:): width variável (w-20 ou w-64), transform sempre zerado
+  const sidebarClass = `fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col shadow-2xl md:shadow-sm
+    transition-all duration-300 ease-in-out
+    w-64 transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
+    md:transform-none md:translate-x-0
+    ${isDesktopOpen ? 'md:w-64' : 'md:w-20'}
   `
 
+  // STAGGER DELAY
   let delayCounter = 100
   const step = 25
   const getDelay = () => {
@@ -154,7 +165,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+
+      {/* --- MOBILE OVERLAY (Fundo escuro quando menu abre) --- */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 backdrop-blur-sm md:hidden transition-opacity duration-300"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* --- HEADER MOBILE (Aparece só no celular) --- */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-20 flex items-center justify-between px-4 shadow-sm">
+        <button
+          onClick={() => setIsMobileOpen(true)}
+          className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+        >
+          <Menu size={24} />
+        </button>
+
+        {/* Logo Mobile Centralizado */}
+        <div className="flex items-center gap-2">
+          <div className={`flex items-baseline justify-center leading-none ${logoFont.className}`}>
+            <span className="text-xl font-extrabold text-gray-800 tracking-tight">BID</span>
+            <span className="text-xl font-semibold text-red-600 ml-1">Logístico</span>
+          </div>
+        </div>
+
+        {/* Espaço vazio para equilibrar o layout ou avatar user */}
+        <div className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center text-red-700 font-bold text-xs border border-red-100">
+          {user.nome.charAt(0).toUpperCase()}
+        </div>
+      </div>
 
       {/* --- SIDEBAR --- */}
       <aside
@@ -163,9 +205,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onMouseLeave={() => setIsHovered(false)}
       >
 
-        {/* 1. Header */}
+        {/* 1. Header Sidebar */}
         <div className="h-24 w-full relative border-b border-gray-100 bg-white z-20 overflow-hidden select-none flex-shrink-0">
 
+          {/* Botão FECHAR no Mobile (X) */}
+          <div className="md:hidden absolute right-2 top-2 z-50">
+            <button
+              onClick={() => setIsMobileOpen(false)}
+              className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* A. ESTADO ABERTO */}
           <div className={getHeaderOpenClass(isOpen)}>
             {!logoError ? (
               <>
@@ -179,7 +232,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }}
                 />
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
-                  Sistema de BIDs
+                  Gestão de Fretes
                 </span>
               </>
             ) : (
@@ -195,7 +248,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
 
-          <div className={getHeaderIconClass(isOpen)}>
+          {/* B. ESTADO FECHADO (Só desktop) */}
+          <div className={`${getHeaderIconClass(isOpen)} md:flex hidden`}>
             {!iconError ? (
               <img
                 src="/images/icon.png"
@@ -211,7 +265,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
 
-          <div className={`absolute right-2 top-2 transition-all duration-300 ${isOpen ? 'opacity-100 delay-200' : 'opacity-0 hidden'}`}>
+          {/* Botão PIN (Só Desktop) */}
+          <div className={`hidden md:block absolute right-2 top-2 transition-all duration-300 ${isOpen ? 'opacity-100 delay-200' : 'opacity-0 pointer-events-none'}`}>
             <button
               onClick={() => setIsPinned(!isPinned)}
               className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
@@ -224,18 +279,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* 2. User Info */}
         <div className="h-20 border-b border-gray-50 transition-all duration-500 flex flex-col items-center justify-center relative overflow-hidden flex-shrink-0">
-
           <div className={getUserOpenClass(isOpen)}>
             <div className="text-center w-full px-2">
               <p className="text-sm font-bold text-gray-900 truncate" title={user.nome}>{user.nome}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5 flex items-center justify-center gap-1">
                 {isAdmin ? (isMaster ? 'Master Admin' : 'Analista') : 'Transportadora'}
-                {isMaster /*&& <ShieldCheck size={12} className="text-red-900" />*/}
+                {isMaster //&& <ShieldCheck size={12} className="text-red-900" />   
+                }
               </p>
             </div>
           </div>
 
-          <div className={getUserClosedClass(isOpen)}>
+          <div className={`${getUserClosedClass(isOpen)} md:block hidden`}>
             <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-red-700 font-bold text-sm border border-red-100 shadow-sm select-none">
               {user.nome.charAt(0).toUpperCase()}
             </div>
@@ -244,7 +299,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* 3. Navegação */}
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-100 select-none">
-
           <SectionTitle label="Operacional" isOpen={isOpen} delayMs={getDelay()} isFirst={true} />
 
           <NavLink
@@ -254,12 +308,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             isOpen={isOpen}
             isActive={pathname === '/dashboard'}
             delayMs={getDelay()}
+            onClick={() => setIsMobileOpen(false)}
           />
 
           {isAdmin && (
             <>
-              <NavLink href="/dashboard/novo-bid" icon={PlusCircle} label="Novo BID" isOpen={isOpen} isActive={pathname === '/dashboard/novo-bid'} delayMs={getDelay()} />
-              <NavLink href="/dashboard/em-analise" icon={FileSearch} label="Em Análise" isOpen={isOpen} isActive={pathname === '/dashboard/em-analise'} delayMs={getDelay()} />
+              <NavLink href="/dashboard/novo-bid" icon={PlusCircle} label="Novo BID" isOpen={isOpen} isActive={pathname === '/dashboard/novo-bid'} delayMs={getDelay()} onClick={() => setIsMobileOpen(false)} />
+              <NavLink href="/dashboard/em-analise" icon={FileSearch} label="Em Análise" isOpen={isOpen} isActive={pathname === '/dashboard/em-analise'} delayMs={getDelay()} onClick={() => setIsMobileOpen(false)} />
 
               {isMaster && (
                 <>
@@ -272,23 +327,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     isActive={pathname === '/dashboard/aprovacao'}
                     isSpecial={true}
                     delayMs={getDelay()}
+                    onClick={() => setIsMobileOpen(false)}
                   />
                 </>
               )}
 
               <SectionTitle label="Gestão" isOpen={isOpen} delayMs={getDelay()} />
-              <NavLink href="/dashboard/historico" icon={History} label="Histórico" isOpen={isOpen} isActive={pathname === '/dashboard/historico'} delayMs={getDelay()} />
-              <NavLink href="/dashboard/gestao-acessos" icon={Users} label="Acessos" isOpen={isOpen} isActive={pathname === '/dashboard/gestao-acessos'} delayMs={getDelay()} />
+              <NavLink href="/dashboard/historico" icon={History} label="Histórico" isOpen={isOpen} isActive={pathname === '/dashboard/historico'} delayMs={getDelay()} onClick={() => setIsMobileOpen(false)} />
+              <NavLink href="/dashboard/gestao-acessos" icon={Users} label="Acessos" isOpen={isOpen} isActive={pathname === '/dashboard/gestao-acessos'} delayMs={getDelay()} onClick={() => setIsMobileOpen(false)} />
             </>
           )}
 
           {!isAdmin && (
             <>
               <SectionTitle label="Minhas Cargas" isOpen={isOpen} delayMs={getDelay()} />
-              <NavLink href="/dashboard/historico" icon={History} label="Resultados" isOpen={isOpen} isActive={pathname === '/dashboard/historico'} delayMs={getDelay()} />
+              <NavLink href="/dashboard/historico" icon={History} label="Resultados" isOpen={isOpen} isActive={pathname === '/dashboard/historico'} delayMs={getDelay()} onClick={() => setIsMobileOpen(false)} />
             </>
           )}
-
         </nav>
 
         {/* 4. Footer */}
@@ -300,11 +355,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             isOpen={isOpen}
             isActive={pathname === '/dashboard/minha-conta'}
             delayMs={delayCounter + step}
+            onClick={() => setIsMobileOpen(false)}
           />
 
           <button
             onClick={handleLogout}
-            // APLICANDO A MESMA CORREÇÃO DE SAMBADA NO BOTÃO DE SAIR
             className={`group flex items-center py-2 w-full rounded-lg text-sm font-medium transition-all duration-300 text-gray-500 hover:text-red-600 hover:bg-white hover:shadow-sm mt-1 
                 ${isOpen ? 'px-3' : 'pl-[26px] pr-0'}`
             }
@@ -323,8 +378,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
       <main
-        className={`flex-1 p-8 transition-all duration-700 cubic-bezier(0.25, 0.8, 0.25, 1)
-            ${isOpen ? 'ml-64' : 'ml-20'} 
+        className={`flex-1 transition-all duration-700 cubic-bezier(0.25, 0.8, 0.25, 1)
+            pt-20 p-4 md:p-8 md:pt-8 
+            ${isDesktopOpen ? 'md:ml-64' : 'md:ml-20'} 
+            ml-0
         `}
       >
         <div className="max-w-6xl mx-auto">
