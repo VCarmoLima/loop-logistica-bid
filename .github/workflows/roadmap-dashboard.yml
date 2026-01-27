@@ -29,6 +29,39 @@ jobs:
           mkdir -p assets
 
           cat <<EOF > assets/roadmap-progress.svg
+          <svg width="600" height="140" viewBox="0 0 600 140" xmlns="http://www.w3.org/2000/svg">
+            <style>
+              .title {
+                font: 600 20px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                fill: #e5e7eb;
+              }
+              .subtitle {
+                font: 14px system-ui, sans-serif;
+                fill: #9ca3af;
+              }
+              .label {
+                font: 13px system-ui, sans-serif;
+                fill: #d1d5db;
+              }
+            </style>
+          
+            <!-- Title -->
+            <text x="30" y="30" class="title">📊 Progresso do Roadmap</text>
+            <text x="30" y="52" class="subtitle">Sistema de BIDs</text>
+          
+            <!-- Background bar -->
+            <rect x="30" y="75" width="540" height="18" rx="9" fill="#1f2933"/>
+          
+            <!-- Progress bar -->
+            <rect x="30" y="75" width="$((540 * PERCENT / 100))" height="18" rx="9" fill="#22c55e"/>
+          
+            <!-- Label -->
+            <text x="30" y="118" class="label">
+              $DONE de $TOTAL tarefas concluídas — $PERCENT%
+            </text>
+          </svg>
+          EOF
+
           <svg width="500" height="90" viewBox="0 0 500 90" xmlns="http://www.w3.org/2000/svg">
             <style>
               .title { font: bold 18px sans-serif; fill: #111 }
