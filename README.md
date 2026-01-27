@@ -14,11 +14,11 @@
 
 ### Acesso Seguro & Identidade
 _Login unificado para Administradores e Transportadoras com autenticação via Supabase Auth._
-![Login Screen](./screenshots/login.png)
+![Login Screen](./public/screenshots/login.png)
 
 ### Painel Admin
 _Painel amigável com funções de criação, análise, homologação e histórico de auditoria._
-![Painel Admin](./screenshots/analise.png)
+![Painel Admin](./public/screenshots/analise.png)
 
 ---
 
