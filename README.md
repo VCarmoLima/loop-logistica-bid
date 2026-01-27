@@ -47,6 +47,41 @@ O projeto foi migrado de uma arquitetura legada (Python) para uma stack moderna 
 * **PDF Generation:** `jspdf` + `jspdf-autotable` (Client-side generation).
 
 ---
+## Estrutura do Repositório
+
+```text
+/
+├── database/               # Documentação do Banco de Dados (Schemas SQL & RLS)
+├── public/                 # Arquivos Estáticos (Acessíveis publicamente)
+│   └── screenshots/        # Imagens da documentação
+│
+├── src/                    # Código Fonte da Aplicação
+│   ├── app/                # Next.js App Router (Páginas e Rotas)
+│   │   ├── dashboard/      # Painel Logado (Admin & Transportadora)
+│   │   └── page.tsx        # Página de Login
+│   │
+│   ├── components/         # Componentes React Reutilizáveis
+│   │   └── ...             # Componentes de Negócio (BidCard, Tabelas)
+│   │
+│   ├── lib/                # Configurações do Core
+│   │   ├── supabase.ts     # Cliente de Conexão com Banco
+│   │   ├── utils.ts        # Funções Auxiliares
+│   │   └── audit.ts        # Funções de PDF Auditoria
+│   │
+│   └── types/              # Definições de Tipos TypeScript
+│
+├── .env.local              # Variáveis de Ambiente (Segredos - Não comitado)
+├── .gitignore              # Arquivos que não devem ser comitados
+├── eslint.config.mjs       # Configuração do ESLint
+├── next.config.ts          # Configuração do Next.js
+├── package.json            # Dependências do Projeto
+├── package-lock.json       # Lock de dependências
+├── postcss.config.js       # Configuração do PostCSS
+├── tsconfig.json           # Configuração do TypeScript
+├── README.md               # Documentação Oficial
+└── ROADMAP.md              # Roadmap do Projeto
+
+---
 
 ## Instalação e Configuração
 
@@ -64,7 +99,7 @@ cd logistica-bid
 npm install
 ```
 ### 3. Configure as variáveis de ambiente
-Crie um arquivo .env na raiz do projeto e adicione suas chaves do Supabase:
+Crie um arquivo .env.local na raiz do projeto e adicione suas chaves do Supabase:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL="sua_url_do_supabase"
 NEXT_PUBLIC_SUPABASE_KEY="sua_chave_anon_publica"
