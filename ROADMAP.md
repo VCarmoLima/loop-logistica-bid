@@ -97,6 +97,7 @@ Finalização para apresentação profissional e deploy.
     - [x] Atualizar Tags e descrição do repositório.
     - [x] Criar `README.md` com prints, fluxo de funcionamento e tecnologias utilizadas.
     - [x] Organizar repositório.
+    - [x] Implementar Workflow/Action para atualização do dashboard de progresso do roadmap.
 
 ---
 **Legenda:**
