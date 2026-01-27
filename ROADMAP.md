@@ -7,6 +7,7 @@ Foco em usabilidade e navegação do sistema.
 
 - [ ] **Página de Login:**
     - [ ] Reservar espaço superior para o logotipo da empresa/projeto.
+    - [ ] Implementar sistema de recuperação de senha.
 - [ ] **Sidebar Dinâmica:**
     - [ ] Implementar comportamento *hover* (expandir ao passar o mouse).
     - [ ] Adicionar botão de alternância para fixar/desafixar a barra.
@@ -69,10 +70,10 @@ Finalização para apresentação profissional e deploy.
 
 - [ ] **Geração de PDF:**
     - [ ] Refatorar o layout dos relatórios para um design mais profissional e corporativo.
-- [ ] **GitHub:**
-    - [ ] Atualizar Tags e descrição do repositório.
-    - [ ] Criar `README.md` de alto nível com prints, fluxo de funcionamento e tecnologias utilizadas.
-    - [ ] Organizar repositório.
+- [x] **GitHub:**
+    - [x] Atualizar Tags e descrição do repositório.
+    - [x] Criar `README.md` com prints, fluxo de funcionamento e tecnologias utilizadas.
+    - [x] Organizar repositório.
 
 ---
 **Legenda:**
