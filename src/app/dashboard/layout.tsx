@@ -230,7 +230,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <p className="text-sm font-bold text-gray-900 truncate" title={user.nome}>{user.nome}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5 flex items-center justify-center gap-1">
                 {isAdmin ? (isMaster ? 'Master Admin' : 'Analista') : 'Transportadora'}
-                {isMaster && <ShieldCheck size={12} className="text-red-900" />}
+                {isMaster /*&& <ShieldCheck size={12} className="text-red-900" />*/}
               </p>
             </div>
           </div>
