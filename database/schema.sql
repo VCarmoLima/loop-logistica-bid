@@ -15,6 +15,7 @@ create table if not exists public.admins (
   nome text not null,
   email text not null unique,
   usuario text,
+  senha text,
   role text default 'standard',
   auth_id uuid references auth.users(id)
 );
@@ -25,6 +26,7 @@ create table if not exists public.transportadoras (
   nome text not null,
   email text not null unique,
   usuario text,
+  senha text,
   auth_id uuid references auth.users(id)
 );
 
