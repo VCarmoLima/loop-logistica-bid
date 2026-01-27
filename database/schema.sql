@@ -173,3 +173,45 @@ with check ( bucket_id = 'veiculos' and public.is_admin() );
 create policy "Apenas Admins deletam fotos"
 on storage.objects for delete
 using ( bucket_id = 'veiculos' and public.is_admin() );
+
+-- ==================================================
+-- ATUALIZAÇÃO DE SEGURANÇA (RLS) - ADMINS
+-- Data: 27/01/2026
+-- ==================================================
+
+drop policy if exists "Permitir criar BIDs" on "public"."bids";
+drop policy if exists "Permitir editar BIDs" on "public"."bids";
+drop policy if exists "Permitir upload de imagens" on storage.objects;
+
+create policy "Apenas Admins criam BIDs"
+on "public"."bids"
+for insert
+to authenticated
+with check (
+  exists (
+    select 1 from public.admins 
+    where admins.auth_id = auth.uid()
+  )
+);
+
+create policy "Apenas Admins editam BIDs"
+on "public"."bids"
+for update
+to authenticated
+using (
+  exists (
+    select 1 from public.admins 
+    where admins.auth_id = auth.uid()
+  )
+);
+
+create policy "Apenas Admins sobem fotos"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'veiculos' 
+  and exists (
+    select 1 from public.admins 
+    where admins.auth_id = auth.uid()
+  )
+);

@@ -28,11 +28,11 @@ Foco em usabilidade e navegação do sistema.
 ## 🟡 Inteligência de Negócio e Painéis Admin
 Implementação do Score dinâmico e refinamento da análise de dados.
 
-- [ ] **Painel Geral:**
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+- [x] **Painel Geral:**
+    - [x] Transformar painel em uma experiência Mobile-First de alto nível.
 - [ ] **Novo BID:**
     - [ ] Ordenação lógica da lista de pátios.
-    - [ ] **Termômetro de Importância:** Criar slider dinâmico para peso Preço vs. Prazo (Padrão 70/30).
+    - [ ] Termômetro de Importância: Criar slider dinâmico para peso Preço vs. Prazo (Padrão 70/30).
     - [ ] Implementar *Double Check* (confirmação) antes de publicar o BID.
 - [ ] **Monitoramento e Análise:**
     - [ ] Exibir líderes em tempo real por: Preço, Prazo e Score (ponderado).
