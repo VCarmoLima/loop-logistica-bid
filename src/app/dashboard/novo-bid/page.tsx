@@ -308,7 +308,7 @@ export default function NovoBidPage() {
                         value={formData.placa} 
                         onChange={handleChange} 
                         disabled={Number(formData.quantidade_veiculos) > 1} 
-                        placeholder="ABC-1234" 
+                        placeholder="ABC-1D23" 
                         className={`${inputStyle} uppercase ${Number(formData.quantidade_veiculos) > 1 ? 'bg-gray-100 text-gray-500 font-bold' : ''}`} 
                     />
                 </div>
@@ -322,6 +322,8 @@ export default function NovoBidPage() {
                         <option>Caminhonete</option>
                         <option>Van</option>
                         <option>Pesado</option>
+                        <option>Máquina</option>
+                        <option>Reboque</option>
                     </select>
                 </div>
                 
