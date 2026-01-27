@@ -1,12 +1,12 @@
 # Roadmap do Projeto: Sistema de BIDs
 
-Este documento detalha as etapas de desenvolvimento, melhorias de interface, implementação de novas lógicas de negócio e profissionalização do sistema de leilão de fretes (BIDs).
+Este documento detalha as etapas de desenvolvimento, melhorias de interface, implementação de novas lógicas de negócio e profissionalização do sistema de leilão de fretes logísticos (BIDs).
 
 ---
 
 ## 📊 Progresso do Projeto
 
-![Progresso do Roadmap](./assets/roadmap-progress.svg)
+![Progresso do Roadmap](./assets/roadmap-progress.svg) 
 
 ---
 
