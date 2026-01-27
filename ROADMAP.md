@@ -8,10 +8,10 @@ Foco em usabilidade e navegação do sistema.
 - [ ] **Página de Login:**
     - [ ] Reservar espaço superior para o logotipo da empresa/projeto.
     - [ ] Implementar sistema de recuperação de senha.
-- [ ] **Sidebar Dinâmica:**
-    - [ ] Implementar comportamento *hover* (expandir ao passar o mouse).
-    - [ ] Adicionar botão de alternância para fixar/desafixar a barra.
-    - [ ] Reservar espaço superior para o logotipo da empresa/projeto.
+- [x] **Sidebar Dinâmica:**
+    - [x] Implementar comportamento *hover* (expandir ao passar o mouse).
+    - [x] Adicionar botão de alternância para fixar/desafixar a barra.
+    - [x] Reservar espaço superior para o logotipo da empresa/projeto.
 - [ ] **Tematização:**
     - [ ] Implementar seletor de tema (Light/Dark Mode). Definir padrão como Light.
 - [ ] **Ajustes de Branding:**
