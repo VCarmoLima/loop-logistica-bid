@@ -319,7 +319,8 @@ export default function NovoBidPage() {
                     <select name="categoria_veiculo" value={formData.categoria_veiculo} onChange={handleChange} className={inputStyle}>
                         <option>Moto</option>
                         <option>Leve</option>
-                        <option>Utilitário</option>
+                        <option>Caminhonete</option>
+                        <option>Van</option>
                         <option>Pesado</option>
                     </select>
                 </div>
