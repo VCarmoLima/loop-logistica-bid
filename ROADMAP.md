@@ -4,8 +4,6 @@ Este documento detalha as etapas de desenvolvimento, melhorias de interface, imp
 
 ---
 
-## 📊 Progresso do Projeto
-
 ![Progresso do Roadmap](./assets/roadmap-progress.svg) 
 
 ---
