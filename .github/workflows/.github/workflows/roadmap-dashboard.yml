@@ -1,0 +1,53 @@
+name: Roadmap Dashboard
+
+on:
+  push:
+    paths:
+      - "ROADMAP.md"
+
+jobs:
+  generate-dashboard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate SVG Progress
+        run: |
+          TOTAL=$(grep -o "\- \[.\]" ROADMAP.md | wc -l)
+          DONE=$(grep -o "\- \[x\]" ROADMAP.md | wc -l)
+
+          if [ "$TOTAL" -eq 0 ]; then
+            PERCENT=0
+          else
+            PERCENT=$((100 * DONE / TOTAL))
+          fi
+
+          BAR_WIDTH=400
+          FILLED=$((BAR_WIDTH * PERCENT / 100))
+
+          mkdir -p assets
+
+          cat <<EOF > assets/roadmap-progress.svg
+          <svg width="500" height="90" viewBox="0 0 500 90" xmlns="http://www.w3.org/2000/svg">
+            <style>
+              .title { font: bold 18px sans-serif; fill: #111 }
+              .label { font: 14px sans-serif; fill: #333 }
+            </style>
+
+            <text x="20" y="25" class="title">Roadmap Progress</text>
+
+            <rect x="20" y="40" width="$BAR_WIDTH" height="20" rx="10" fill="#e5e7eb"/>
+            <rect x="20" y="40" width="$FILLED" height="20" rx="10" fill="#22c55e"/>
+
+            <text x="20" y="80" class="label">$DONE de $TOTAL tarefas concluídas ($PERCENT%)</text>
+          </svg>
+          EOF
+
+      - name: Commit SVG
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add assets/roadmap-progress.svg
+          git commit -m "chore: update roadmap dashboard"
+          git push
