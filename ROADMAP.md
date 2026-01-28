@@ -34,6 +34,7 @@ Implementação do Score dinâmico e refinamento da análise de dados.
     - [ ] Ordenação lógica da lista de pátios.
     - [ ] Termômetro de Importância: Criar slider dinâmico para peso Preço vs. Prazo (Padrão 70/30).
     - [ ] Implementar *Double Check* (confirmação) antes de publicar o BID.
+    - [x] Adicionar categorias padrões dos veículos
 - [ ] **Monitoramento e Análise:**
     - [ ] Exibir líderes em tempo real por: Preço, Prazo e Score (ponderado).
     - [ ] Ajustar textos dos rankings para evitar abreviações.
@@ -55,12 +56,11 @@ Implementação do Score dinâmico e refinamento da análise de dados.
 Refinamento da jornada de quem oferta os lances.
 
 - [ ] **Card de BID:**
-    - [ ] Ajustar layout de endereço para melhor leitura.
-    - [ ] Adicionar botão de "Informações Detalhadas" (Imagem inteira do veículo, endereços completos não apenas cidade).
+    - [x] Adicionar botão de "Informações Detalhadas" (Imagem inteira do veículo, endereços completos não apenas cidade).
     - [ ] Tornar o Card dinâmico: destacar Preço ou Prazo conforme o "Termômetro" definido pelo Admin.
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
-- [ ] **Segurança de Lance:**
-    - [ ] Implementar *Double Check* no envio de lances para evitar erros de digitação (ex: R$ 50,00 vs R$ 5.000,00).
+    - [x] Transformar painel em uma experiência Mobile-First de alto nível.
+- [x] **Segurança de Lance:**
+    - [x] Implementar *Double Check* no envio de lances para evitar erros de digitação (ex: R$ 50,00 vs R$ 5.000,00).
 - [ ] **Histórico e Consistência:**
     - [ ] Auditar e corrigir divergência de dados entre diferentes contas de transportadores.
     - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
