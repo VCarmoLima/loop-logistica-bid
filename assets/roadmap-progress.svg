@@ -18,9 +18,9 @@
   <text x="30" y="52" class="subtitle">Sistema de BIDs</text>
 
   <rect x="30" y="75" width="540" height="18" rx="9" fill="#1f2933"/>
-  <rect x="30" y="75" width="81" height="18" rx="9" fill="#22c55e"/>
+  <rect x="30" y="75" width="108" height="18" rx="9" fill="#22c55e"/>
 
   <text x="30" y="118" class="label">
-    11 de 69 tarefas concluídas — 15%
+    14 de 69 tarefas concluídas — 20%
   </text>
 </svg>
