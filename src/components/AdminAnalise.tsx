@@ -43,14 +43,20 @@ export default function AdminAnalise({ user }: { user: any }) {
     }
   }
 
-  const calcularRankings = (lances: any[]) => {
+  // --- FUNÇÃO DE RANKING DINÂMICO ---
+  const calcularRankings = (lances: any[], bid: any) => {
     if (!lances || lances.length === 0) return []
+    
+    // Pega os pesos do BID ou usa o padrão 70/30 se não tiver salvo
+    const pesoPreco = bid.peso_preco || 70
+    const pesoPrazo = bid.peso_prazo || 30
+
     const minPreco = Math.min(...lances.map(l => l.valor))
     const minPrazo = Math.min(...lances.map(l => l.prazo_dias))
 
     return lances.map(l => {
-        const scorePreco = (minPreco / l.valor) * 70
-        const scorePrazo = (minPrazo / l.prazo_dias) * 30
+        const scorePreco = (minPreco / l.valor) * pesoPreco
+        const scorePrazo = (minPrazo / l.prazo_dias) * pesoPrazo
         return { ...l, score: scorePreco + scorePrazo }
     }).sort((a, b) => b.score - a.score)
   }
@@ -153,8 +159,13 @@ export default function AdminAnalise({ user }: { user: any }) {
       ) : (
         <div className="space-y-8">
             {bids.map((bid) => {
-                const lancesCalculados = calcularRankings(bid.lances)
+                // AGORA PASSA O OBJETO BID PARA USAR OS PESOS DINÂMICOS
+                const lancesCalculados = calcularRankings(bid.lances, bid)
                 const totalLances = lancesCalculados.length
+                
+                // Pesos para exibição
+                const pPreco = bid.peso_preco || 70
+                const pPrazo = bid.peso_prazo || 30
 
                 return (
                     <div key={bid.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
@@ -280,11 +291,13 @@ export default function AdminAnalise({ user }: { user: any }) {
                                                 ))}
                                             </div>
                                         </div>
-                                        {/* Score (Neutro/Preto) */}
-                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="bg-gray-100 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
-                                                <Trophy size={14} className="text-gray-700"/>
-                                                <span className="text-xs font-bold text-gray-700 uppercase">Melhor Score</span>
+                                        {/* Score DINÂMICO */}
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden ring-1 ring-gray-900/10">
+                                            <div className="bg-gray-100 px-3 py-2 border-b border-gray-200 flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Trophy size={14} className="text-gray-700"/>
+                                                    <span className="text-xs font-bold text-gray-700 uppercase">Score ({pPreco}/{pPrazo})</span>
+                                                </div>
                                             </div>
                                             <div className="p-2 bg-white">
                                                 {lancesCalculados.slice(0,3).map((l, i) => (
