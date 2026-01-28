@@ -681,16 +681,17 @@ export default function NovoBidPage() {
 
       </form>
 
-      {/* --- MODAL DE DOUBLE CHECK (REDESIGN PROFISSIONAL) --- */}
+      {/* --- MODAL DE DOUBLE CHECK (RESPONSIVO) --- */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200">
+            {/* Ajuste de altura e largura máxima */}
+            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh] border border-gray-200">
                 
-                {/* 1. Cabeçalho Limpo */}
-                <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+                {/* 1. Cabeçalho (Padding responsivo) */}
+                <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100 flex justify-between items-center bg-white">
                     <div>
                         <h3 className="text-lg font-bold text-gray-900">Revisão de Publicação</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">Confira os dados antes de liberar para o mercado.</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Confira os dados antes de liberar.</p>
                     </div>
                     <button 
                         onClick={() => setShowConfirm(false)} 
@@ -702,11 +703,10 @@ export default function NovoBidPage() {
 
                 <div className="p-0 overflow-y-auto flex-1">
                     
-                    {/* 2. Grid de Informações (Estilo Lista Técnica) */}
                     <div className="divide-y divide-gray-100">
                         
-                        {/* Bloco ID e Data */}
-                        <div className="px-6 py-4 bg-gray-50/50 grid grid-cols-2 gap-4">
+                        {/* Bloco ID e Data (Grid vira coluna no mobile) */}
+                        <div className="px-4 py-4 md:px-6 md:py-4 bg-gray-50/50 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Código do Processo</span>
                                 <span className="font-mono text-sm font-bold text-gray-900 bg-white px-2 py-1 rounded border border-gray-200 inline-block shadow-sm">
@@ -720,7 +720,7 @@ export default function NovoBidPage() {
                         </div>
 
                         {/* Bloco Veículo */}
-                        <div className="px-6 py-5">
+                        <div className="px-4 py-5 md:px-6">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="p-1.5 bg-red-50 text-red-600 rounded">
                                     <Truck size={14} strokeWidth={2.5}/>
@@ -728,7 +728,8 @@ export default function NovoBidPage() {
                                 <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">Dados da Carga</h4>
                             </div>
                             
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-6">
+                            {/* Grid ajustado: 2 colunas no mobile, 4 no desktop */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-4 md:gap-x-6">
                                 <div className="col-span-2">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase block">Modelo / Versão</span>
                                     <span className="text-sm font-bold text-gray-900">{formData.titulo}</span>
@@ -745,8 +746,8 @@ export default function NovoBidPage() {
                                     <span className="text-[10px] font-bold text-gray-400 uppercase block">Operação</span>
                                     <span className="text-sm font-medium text-gray-700">{formData.tipo_transporte}</span>
                                 </div>
-                                {/* Tags Monocromáticas/Neutras */}
-                                <div className="col-span-2 flex gap-3 mt-1">
+                                {/* Tags */}
+                                <div className="col-span-2 flex flex-wrap gap-2 md:gap-3 mt-1">
                                     <div className="flex items-center gap-1.5 text-xs text-gray-700 font-medium bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">
                                         <Key size={12} className="text-gray-500"/> 
                                         {formData.possui_chave ? 'Com Chave' : 'Sem Chave'}
@@ -759,8 +760,8 @@ export default function NovoBidPage() {
                             </div>
                         </div>
 
-                        {/* Bloco Rota (Design Logístico Clean) */}
-                        <div className="px-6 py-5">
+                        {/* Bloco Rota */}
+                        <div className="px-4 py-5 md:px-6">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="p-1.5 bg-red-50 text-red-600 rounded">
                                     <MapPin size={14} strokeWidth={2.5}/>
@@ -790,8 +791,8 @@ export default function NovoBidPage() {
                             </div>
                         </div>
 
-                        {/* Bloco Estratégia (Clean) */}
-                        <div className="px-6 py-5 bg-gray-50/30">
+                        {/* Bloco Estratégia */}
+                        <div className="px-4 py-5 md:px-6 bg-gray-50/30">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase block mb-2">Encerramento</span>
@@ -819,11 +820,10 @@ export default function NovoBidPage() {
                                 </div>
                             </div>
                             
-                            {/* Check Imagem */}
-                            <div className="mt-4 pt-4 border-t border-gray-200/60 flex items-center gap-2 text-xs text-gray-500">
-                                <ImageIcon size={14} />
+                            <div className="mt-4 pt-4 border-t border-gray-200/60 flex items-center gap-2 text-xs text-gray-500 break-all">
+                                <ImageIcon size={14} className="flex-shrink-0"/>
                                 {imagemFile ? (
-                                    <span className="text-gray-700 font-medium">Imagem anexada: {imagemFile.name}</span>
+                                    <span className="text-gray-700 font-medium truncate">Imagem anexada: {imagemFile.name}</span>
                                 ) : (
                                     <span>Nenhuma foto anexada (Será usado ícone padrão)</span>
                                 )}
@@ -832,18 +832,18 @@ export default function NovoBidPage() {
                     </div>
                 </div>
 
-                {/* Footer Actions */}
-                <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                {/* Footer Actions (Botões empilhados no mobile, linha no desktop) */}
+                <div className="p-4 md:p-5 border-t border-gray-100 bg-gray-50 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                     <button 
                         onClick={() => setShowConfirm(false)}
-                        className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-800 hover:bg-white border border-transparent hover:border-gray-200 rounded-lg transition-all"
+                        className="w-full sm:w-auto px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-800 hover:bg-white border border-gray-200 sm:border-transparent hover:border-gray-200 rounded-lg transition-all"
                     >
                         Voltar e Editar
                     </button>
                     <button 
                         onClick={handleFinalSubmit}
                         disabled={loading}
-                        className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
+                        className="w-full sm:w-auto px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
                     >
                         {loading ? 'Processando...' : <><CheckCircle size={16} /> CONFIRMAR E PUBLICAR</>}
                     </button>
