@@ -65,13 +65,13 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
       
       if (type === 'funciona') {
           return isTrue 
-            ? <span className="flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded text-xs font-bold border border-green-100"><Power size={12}/> Funciona</span>
-            : <span className="flex items-center gap-1 text-red-700 bg-red-50 px-2 py-1 rounded text-xs font-bold border border-red-100"><Power size={12}/> Não Funciona</span>
+            ? <span className="flex items-center gap-1 text-gray-700 bg-gray-50 px-2 py-1 rounded text-xs font-bold border border-gray-100"><Power size={12}/> Funciona</span>
+            : <span className="flex items-center gap-1 text-gray-700 bg-gray-50 px-2 py-1 rounded text-xs font-bold border border-gray-100"><Power size={12}/> Não Funciona</span>
       }
       if (type === 'chave') {
           return isTrue
-            ? <span className="flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-1 rounded text-xs font-bold border border-blue-100"><Key size={12}/> Com Chave</span>
-            : <span className="flex items-center gap-1 text-gray-600 bg-gray-100 px-2 py-1 rounded text-xs font-bold border border-gray-200"><Key size={12}/> Sem Chave</span>
+            ? <span className="flex items-center gap-1 text-red-700 bg-red-50 px-2 py-1 rounded text-xs font-bold border border-red-100"><Key size={12}/> Com Chave</span>
+            : <span className="flex items-center gap-1 text-red-600 bg-red-100 px-2 py-1 rounded text-xs font-bold border border-red-200"><Key size={12}/> Sem Chave</span>
       }
   }
 
@@ -279,12 +279,12 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
                                 <div>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Modelo</span>
-                                    <p className="text-sm font-bold text-gray-900">{bid.modelo || bid.titulo}</p>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Categoria</h3>
+                                <p className="text-sm font-bold text-gray-800">{bid.categoria_veiculo || '-'}</p>
                                 </div>
                                 <div>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Versão</span>
-                                    <p className="text-sm font-bold text-gray-900">{bid.versao || '-'}</p>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Modelo</span>
+                                    <p className="text-sm font-bold text-gray-900">{bid.modelo || bid.titulo}</p>
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Quantidade</span>
@@ -303,7 +303,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <h3 className="text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-1">
-                                    <MapPin size={12}/> Origem (Retirada)
+                                    <MapPin size={12}/> Endereço Completo de Retirada
                                 </h3>
                                 <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                                     <p className="text-sm font-medium text-gray-900 leading-snug">
@@ -314,7 +314,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                             </div>
                             <div>
                                 <h3 className="text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-1">
-                                    <MapPin size={12}/> Destino (Entrega)
+                                    <MapPin size={12}/> Endereço Completo de Entrega
                                 </h3>
                                 <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                                     <p className="text-sm font-medium text-gray-900 leading-snug">
