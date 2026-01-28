@@ -258,7 +258,7 @@ export default function NovoBidPage() {
             prazo_limite: prazo_limite,
             status: 'ABERTO',
             imagem_url: imagem_url,
-            eso_preco: usarEstrategia ? pesoPreco : 70,
+            peso_preco: usarEstrategia ? pesoPreco : 70,
             peso_prazo: usarEstrategia ? (100 - pesoPreco) : 30,
             log_criacao: `Sistema Web em ${new Date().toLocaleString()}`
         })
