@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { 
     MapPin, Clock, Truck, TrendingDown, CheckCircle, XCircle, 
-    DollarSign, Zap, Eye, AlertTriangle, X, Key, Power, Layers, Tag
+    DollarSign, Zap, Eye, AlertTriangle, X, Key, Power, Layers, Tag, Target
 } from 'lucide-react'
 
 const supabase = createClient(
@@ -46,21 +46,16 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
 
   // 2. Helpers de Exibição
   
-  // Função para resumir endereço no Card (Tenta pegar Cidade - UF)
-  // Lógica: Se tiver vírgula, assume que o formato é "Rua, Cidade - UF" e pega a parte final.
-  // Se não tiver vírgula, mostra o texto original (assumindo que já é resumido).
   const getCityFromAddress = (address: string) => {
       if (!address) return '---';
       const parts = address.split(',');
       if (parts.length > 1) {
-          return parts[parts.length - 1].trim(); // Pega a última parte (ex: "Jundiaí - SP")
+          return parts[parts.length - 1].trim(); 
       }
       return address;
   }
 
-  // Helpers de Status do Veículo (Funciona / Chave)
   const renderStatusBadge = (condition: boolean | string | null, type: 'funciona' | 'chave') => {
-      // Normaliza para booleano se vier string "true"/"false" ou "sim"/"não" do banco
       const isTrue = condition === true || condition === 'true' || condition === 'Sim';
       
       if (type === 'funciona') {
@@ -75,7 +70,36 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
       }
   }
 
-  // ... (Lógicas de Submit mantidas iguais)
+  // --- LÓGICA DE ESTRATÉGIA (TERMÔMETRO) ---
+  const pesoPreco = bid.peso_preco || 70 // Padrão 70 se não vier do banco
+  
+  // Define o tipo de estratégia
+  const strategyType = pesoPreco >= 60 ? 'price' : pesoPreco <= 40 ? 'deadline' : 'balanced'
+
+  // Configuração Visual baseada na estratégia
+  const strategyConfig = {
+      price: {
+          label: 'Foco: MENOR PREÇO',
+          colorClass: 'text-green-700 bg-green-50 border-green-100',
+          priceBoxClass: 'bg-green-50 border-green-200 ring-1 ring-green-500/20', // Destaque Verde
+          deadlineBoxClass: 'bg-gray-50 border-gray-200 opacity-80' // Neutro
+      },
+      deadline: {
+          label: 'Foco: RAPIDEZ (PRAZO)',
+          colorClass: 'text-green-700 bg-green-50 border-green-100',
+          priceBoxClass: 'bg-green-50 border-green-200 ring-1 ring-green-500/20', // Destaque Verde
+          deadlineBoxClass: 'bg-gray-50 border-gray-200 opacity-80' // Neutro
+      },
+      balanced: {
+          label: 'Estratégia: EQUILIBRADA',
+          colorClass: 'text-yellow-700 bg-yellow-50 border-yellow-100',
+          priceBoxClass: 'bg-yellow-50/50 border-yellow-200', 
+          deadlineBoxClass: 'bg-yellow-50/50 border-yellow-200' 
+      }
+  }
+  
+  const currentStrategy = strategyConfig[strategyType as keyof typeof strategyConfig]
+
   const handleLanceRelampago = () => {
       if (!melhorPreco) return;
       const novoPreco = melhorPreco - 50.0;
@@ -160,14 +184,13 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                         <Clock size={10} /> {formatDate(bid.prazo_limite)}
                     </span>
                 </div>
-                {/* Título Resumido */}
                 <h3 className="text-sm font-bold text-gray-900 leading-tight mb-0.5 line-clamp-1" title={bid.titulo}>{bid.titulo}</h3>
                 <p className="text-xs text-gray-500 line-clamp-1">{bid.modelo || bid.categoria_veiculo} • {bid.tipo_transporte}</p>
             </div>
 
-            {/* Rota Resumida (Só Cidades) */}
+            {/* Rota */}
             <div 
-                className="flex items-center gap-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors group"
+                className="flex items-center gap-2 text-xs text-gray-600 mb-3 bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors group"
                 onClick={() => setShowDetails(true)}
                 title="Clique para ver endereços completos"
             >
@@ -179,17 +202,24 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                 </div>
             </div>
 
-            {/* Métricas de Mercado */}
+            {/* --- NOVO: INDICADOR DE ESTRATÉGIA --- */}
+            <div className={`mb-3 flex items-center justify-center gap-2 py-1.5 px-2 rounded border text-[10px] font-bold uppercase tracking-wide ${currentStrategy.colorClass}`}>
+                <Target size={12} /> {currentStrategy.label}
+            </div>
+
+            {/* Métricas de Mercado (DINÂMICAS) */}
             <div className="grid grid-cols-2 gap-2 mb-4 mt-auto">
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 text-center">
+                {/* Box Preço: Ganha destaque se for 'price' */}
+                <div className={`p-2 rounded border text-center transition-colors ${currentStrategy.priceBoxClass}`}>
                     <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Melhor Preço</p>
-                    <p className="text-sm font-extrabold text-gray-900">
+                    <p className={`text-sm font-extrabold ${strategyType === 'price' ? 'text-green-700' : 'text-gray-900'}`}>
                         {melhorPreco ? formatCurrency(melhorPreco) : '---'}
                     </p>
                 </div>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 text-center">
+                {/* Box Prazo: Ganha destaque se for 'deadline' */}
+                <div className={`p-2 rounded border text-center transition-colors ${currentStrategy.deadlineBoxClass}`}>
                     <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Melhor Prazo</p>
-                    <p className="text-sm font-extrabold text-gray-900">
+                    <p className={`text-sm font-extrabold ${strategyType === 'deadline' ? 'text-green-700' : 'text-gray-900'}`}>
                         {melhorPrazo ? `${melhorPrazo} dias` : '---'}
                     </p>
                 </div>
@@ -243,7 +273,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
         </div>
         </div>
 
-        {/* --- MODAL DETALHADO (Informações Completas) --- */}
+        {/* --- MODAL DETALHADO --- */}
         {showDetails && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl overflow-y-auto flex flex-col">
@@ -272,7 +302,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                              </div>
                         </div>
 
-                        {/* Ficha Técnica (MELHORADA) */}
+                        {/* Ficha Técnica */}
                         <div>
                             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                                 <Tag size={16} className="text-red-600" /> Especificações do Veículo
@@ -307,7 +337,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                                 </h3>
                                 <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                                     <p className="text-sm font-medium text-gray-900 leading-snug">
-                                        {/* Mostra o texto COMPLETO aqui */}
                                         {bid.endereco_retirada}
                                     </p>
                                 </div>
@@ -318,7 +347,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                                 </h3>
                                 <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                                     <p className="text-sm font-medium text-gray-900 leading-snug">
-                                        {/* Mostra o texto COMPLETO aqui */}
                                         {bid.endereco_entrega}
                                     </p>
                                 </div>
@@ -347,7 +375,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
             </div>
         )}
 
-        {/* --- MODAL CONFIRMAÇÃO (DOUBLE CHECK) --- */}
+        {/* --- MODAL CONFIRMAÇÃO --- */}
         {showConfirm && parsedValues && (
              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in zoom-in-95 duration-200">
                  <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden">
