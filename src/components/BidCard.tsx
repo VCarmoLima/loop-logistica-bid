@@ -323,8 +323,8 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase">ID</span>
-                                    <p className="text-sm font-mono text-gray-600">{bid.codigo_unico}</p>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Foco do Transporte</span>
+                                    <p className="text-sm font-bold text-gray-900">{currentStrategy.label}</p>
                                 </div>
                             </div>
                         </div>
