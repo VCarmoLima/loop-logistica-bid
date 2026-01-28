@@ -45,12 +45,10 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
     const handleCreate = async () => {
         if (!newName || !newEmail || !newPass) return alert('Preencha nome, email e senha.')
 
-        setLoading(true) // Importante adicionar loading state no botão
+        setLoading(true)
 
         try {
             // 1. Criar Usuário no Supabase Auth
-            // Nota: Em um app real, usaríamos uma Admin API, mas para manter simples
-            // usaremos o signUp. Como desativamos "Confirm Email", ele cria e já ativa.
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: newEmail,
                 password: newPass,
@@ -59,14 +57,13 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
             if (authError) throw authError
             if (!authData.user) throw new Error("Erro ao gerar ID de autenticação")
 
-            // 2. Criar o Perfil na tabela pública (vinculando com auth_id)
+            // 2. Criar o Perfil no Banco
             const table = activeTab === 'admins' ? 'admins' : 'transportadoras'
             const payload: any = {
-                auth_id: authData.user.id, // O VÍNCULO MÁGICO AQUI
+                auth_id: authData.user.id,
                 nome: newName,
                 email: newEmail,
-                usuario: newEmail.split('@')[0], // Gera um user visual baseado no email
-                // senha: newPass  <-- NÃO SALVAMOS MAIS A SENHA PURA AQUI! SEGURANÇA!
+                usuario: newEmail.split('@')[0],
             }
             if (activeTab === 'admins') payload.role = newRole
 
@@ -74,18 +71,20 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
 
             if (dbError) throw dbError
 
-            // 3. Enviar E-mail (Sua API já pronta)
-            await fetch('/api/send-email', {
+            // 3. Enviar E-mail de Boas Vindas (CORRIGIDO)
+            // Agora chama a rota específica que usa o template bonito
+            await fetch('/api/send-welcome', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    to: newEmail,
-                    subject: 'Acesso ao Sistema BID Log',
-                    html: `... (seu html de boas vindas) ...`
+                    email: newEmail,
+                    nome: newName,
+                    senhaTemporaria: newPass,
+                    tipo: activeTab === 'admins' ? 'admin' : 'transportadora'
                 })
             })
 
-            alert('Usuário criado com Sucesso (Auth + Banco)!')
+            alert('Usuário criado com Sucesso e E-mail enviado!')
             setNewName(''); setNewEmail(''); setNewUser(''); setNewPass('')
             fetchUsers()
 
