@@ -18,7 +18,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [showRules, setShowRules] = useState(false)
   
-  // NOVO: Estado para controlar o sinal verde
+  // Estado para controlar o sinal verde
   const [isLive, setIsLive] = useState(false)
 
   // Função de busca (memorizada para usar no useEffect)
@@ -31,7 +31,6 @@ export default function DashboardPage() {
     
     if (data) {
         setBidsTransp(data)
-        // Ativa o sinal verde quando dados chegam
         setIsLive(true)
     }
   }, [])
@@ -66,11 +65,10 @@ export default function DashboardPage() {
                         () => fetchBidsTransporter()
                     )
                     .subscribe((status) => {
-                        // Ativa sinal verde se conectado
                         if (status === 'SUBSCRIBED') setIsLive(true)
                     })
 
-                // 3. Configura Polling (Backup a cada 3s - Mais rápido para parecer real)
+                // 3. Configura Polling (Backup a cada 3s)
                 interval = setInterval(() => {
                     fetchBidsTransporter()
                 }, 3000)
@@ -81,12 +79,11 @@ export default function DashboardPage() {
 
     init()
 
-    // Limpeza ao desmontar
     return () => {
         if (channel) supabase.removeChannel(channel)
         if (interval) clearInterval(interval)
     }
-  }, [fetchBidsTransporter]) // Dependência segura
+  }, [fetchBidsTransporter])
 
   if (loading) return <div className="p-8 text-center text-gray-500 font-medium">Carregando painel...</div>
 
@@ -97,21 +94,25 @@ export default function DashboardPage() {
 
   // 2. VISÃO TRANSPORTADORA
   return (
-    <div className="pb-20 md:pb-0"> {/* Padding bottom para mobile */}
+    <div className="pb-20 md:pb-0"> 
       
-      {/* HEADER: Flex-col no mobile para alinhar itens verticalmente */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
             <h1 className="text-2xl font-bold text-gray-900 leading-tight">Mural de Oportunidades</h1>
             <p className="text-gray-500 text-sm flex flex-wrap items-center gap-1 mt-1">
                 BIDs disponíveis em tempo real. 
-                <button onClick={() => setShowRules(!showRules)} className="text-red-600 font-bold hover:underline text-xs flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded-full">
+                {/* Botão de Regras (AGORA CINZA) */}
+                <button 
+                    onClick={() => setShowRules(!showRules)} 
+                    className="text-gray-600 font-bold hover:text-gray-900 hover:bg-gray-100 text-xs flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 transition-colors"
+                >
                     <Info size={12}/> Regras do Leilão
                 </button>
             </p>
         </div>
 
-        {/* INDICADOR DE TEMPO REAL (Substitui botão de atualizar) */}
+        {/* INDICADOR DE TEMPO REAL */}
         <div className={`
             flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm self-start md:self-auto
             ${isLive ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-100 text-gray-400'}
@@ -124,11 +125,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* REGRAS (AGORA EM TONS DE CINZA) */}
       {showRules && (
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 md:p-6 mb-8 text-sm text-blue-900 animate-in fade-in slide-in-from-top-2">
-            <h3 className="font-bold mb-2 flex items-center gap-2"><Info size={16}/> Regras do Leilão & Escolha</h3>
-            <ul className="list-disc pl-5 space-y-1 text-blue-800/80 text-xs md:text-sm">
-                <li><strong>Ranking Dinâmico:</strong> O sistema prioriza o <span className="font-bold">Menor Preço</span>. Em caso de empate, vence o <span className="font-bold">Menor Prazo</span>.</li>
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 md:p-6 mb-8 text-sm text-gray-700 animate-in fade-in slide-in-from-top-2 shadow-sm">
+            <h3 className="font-bold mb-3 flex items-center gap-2 text-gray-900"><Info size={16}/> Regras do Leilão & Escolha</h3>
+            <ul className="list-disc pl-5 space-y-2 text-gray-600 text-xs md:text-sm">
+                <li><strong>Ranking Dinâmico:</strong> O sistema prioriza o <span className="font-bold text-gray-900">Menor Preço</span>. Em caso de empate, vence o <span className="font-bold text-gray-900">Menor Prazo</span>.</li>
                 <li><strong>Decisão Final (Score):</strong> Após o encerramento, o sistema calcula um Score (70% Preço + 30% Prazo). O administrador utiliza este Score para homologar o vencedor.</li>
                 <li><strong>Lances "Ruins":</strong> Você pode ofertar um valor maior que o líder, desde que seu prazo seja agressivo. Se ambos forem piores, suas chances de vitória são mínimas.</li>
                 <li><strong>Encerramento:</strong> O leilão encerra automaticamente no horário estipulado.</li>
@@ -145,7 +147,6 @@ export default function DashboardPage() {
             <p className="text-gray-500 text-sm mt-1">Nenhum BID disponível para cotação no momento.</p>
         </div>
       ) : (
-        // Grid Responsivo: 1 coluna no mobile (gap-4), 3 no desktop
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {bidsTransp.map((bid) => (
                 <BidCard 
