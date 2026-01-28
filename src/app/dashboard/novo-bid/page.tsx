@@ -48,7 +48,8 @@ export default function NovoBidPage() {
   const [showConfirm, setShowConfirm] = useState(false)
 
   // ESTRATÉGIA (PESOS)
-  const [pesoPreco, setPesoPreco] = useState(70)
+  const [usarEstrategia, setUsarEstrategia] = useState(false) // <--- NOVO: Começa desativado (Padrão)
+  const [pesoPreco, setPesoPreco] = useState(70) // Mantém 70 como base
 
   // Estilos
   const inputStyle = "w-full p-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-500"
@@ -245,8 +246,8 @@ export default function NovoBidPage() {
             prazo_limite: prazo_limite,
             status: 'ABERTO',
             imagem_url: imagem_url,
-            peso_preco: pesoPreco,
-            peso_prazo: 100 - pesoPreco,
+            eso_preco: usarEstrategia ? pesoPreco : 70,
+            peso_prazo: usarEstrategia ? (100 - pesoPreco) : 30,
             log_criacao: `Sistema Web em ${new Date().toLocaleString()}`
         })
 
@@ -520,57 +521,86 @@ export default function NovoBidPage() {
             </div>
         </div>
 
-        {/* Seção 3: Estratégia do Leilão (RESPONSIVO + CORES DINÂMICAS) */}
+        {/* Seção 3: Estratégia do Leilão (OPCIONAL) */}
         <div className="p-6 border-b border-gray-100">
-            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
-                <Sliders size={16} /> Estratégia de Homologação
-            </h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Sliders size={16} /> Estratégia de Homologação
+                </h2>
+                
+                {/* CHECKBOX DE ATIVAÇÃO */}
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input 
+                        type="checkbox" 
+                        checked={usarEstrategia} 
+                        onChange={(e) => setUsarEstrategia(e.target.checked)} 
+                        className={checkboxStyle}
+                    />
+                    <span className="text-xs font-bold text-red-600">
+                        DEFINIR PESOS MANUALMENTE?
+                    </span>
+                </label>
+            </div>
             
-            <div className="bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200">
-                {/* RESPONSIVIDADE: No mobile (flex-col), o slider (ordem 1) fica em cima */}
-                <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-0 mb-4">
-                    
-                    {/* Bloco 1: Peso Preço (Ordem 2 no mobile) */}
-                    <div className="text-center w-full md:w-1/3 order-2 md:order-1">
-                        <span className={`block text-xs font-bold uppercase mb-1 ${colors.priceText}`}>Peso do Preço</span>
-                        <span className={`text-4xl md:text-3xl font-extrabold ${colors.priceText}`}>{pesoPreco}%</span>
-                    </div>
-                    
-                    {/* Bloco 2: Slider (Ordem 1 no mobile - Topo) */}
-                    <div className="w-full md:w-1/3 px-2 pb-2 order-1 md:order-2">
-                         <input 
-                            type="range" 
-                            min="10" 
-                            max="90" 
-                            step="5"
-                            value={pesoPreco} 
-                            onChange={(e) => setPesoPreco(Number(e.target.value))}
-                            className={`w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer ${colors.sliderAccent}`}
-                        />
-                         {/* Legenda do Slider */}
-                         <div className="flex justify-between text-[10px] text-gray-400 mt-2 font-bold px-1">
-                            <span>Priorizar Prazo</span>
-                            <span>Equilibrado</span>
-                            <span>Priorizar Preço</span>
-                         </div>
-                    </div>
+            {/* CONTEÚDO CONDICIONAL */}
+            {usarEstrategia ? (
+                <div className="bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-0 mb-4">
+                        
+                        {/* Peso Preço */}
+                        <div className="text-center w-full md:w-1/3 order-2 md:order-1">
+                            <span className={`block text-xs font-bold uppercase mb-1 ${colors.priceText}`}>Peso do Preço</span>
+                            <span className={`text-4xl md:text-3xl font-extrabold ${colors.priceText}`}>{pesoPreco}%</span>
+                        </div>
+                        
+                        {/* Slider */}
+                        <div className="w-full md:w-1/3 px-2 pb-2 order-1 md:order-2">
+                             <input 
+                                type="range" 
+                                min="10" 
+                                max="90" 
+                                step="5"
+                                value={pesoPreco} 
+                                onChange={(e) => setPesoPreco(Number(e.target.value))}
+                                className={`w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer ${colors.sliderAccent}`}
+                            />
+                             <div className="flex justify-between text-[10px] text-gray-400 mt-2 font-bold px-1">
+                                <span>Priorizar Prazo</span>
+                                <span>Equilibrado</span>
+                                <span>Priorizar Preço</span>
+                             </div>
+                        </div>
 
-                    {/* Bloco 3: Peso Prazo (Ordem 3 no mobile) */}
-                    <div className="text-center w-full md:w-1/3 order-3 md:order-3">
-                        <span className={`block text-xs font-bold uppercase mb-1 ${colors.deadlineText}`}>Peso do Prazo</span>
-                        <span className={`text-4xl md:text-3xl font-extrabold ${colors.deadlineText}`}>{100 - pesoPreco}%</span>
+                        {/* Peso Prazo */}
+                        <div className="text-center w-full md:w-1/3 order-3 md:order-3">
+                            <span className={`block text-xs font-bold uppercase mb-1 ${colors.deadlineText}`}>Peso do Prazo</span>
+                            <span className={`text-4xl md:text-3xl font-extrabold ${colors.deadlineText}`}>{100 - pesoPreco}%</span>
+                        </div>
+                    </div>
+                    
+                    <p className="text-xs text-center text-gray-500 bg-white p-3 rounded border border-gray-200 shadow-sm leading-relaxed">
+                        {pesoPreco >= 60 
+                            ? "Estratégia Custo: Foco total no menor valor." 
+                            : pesoPreco <= 40 
+                            ? "Estratégia Urgência: Foco total na entrega rápida."
+                            : "Estratégia Equilibrada: Busca o melhor balanço."
+                        }
+                    </p>
+                </div>
+            ) : (
+                // FEEDBACK VISUAL QUANDO DESATIVADO (PADRÃO)
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between opacity-75 grayscale hover:grayscale-0 transition-all">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-200 rounded-full text-gray-500">
+                            <Sliders size={18} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-gray-700">Estratégia Padrão Ativa</p>
+                            <p className="text-xs text-gray-500">O sistema usará o peso automático de <strong className="text-gray-900">70% Preço</strong> e <strong className="text-gray-900">30% Prazo</strong>.</p>
+                        </div>
                     </div>
                 </div>
-                
-                <p className="text-xs text-center text-gray-500 bg-white p-3 rounded border border-gray-200 shadow-sm leading-relaxed">
-                    {pesoPreco >= 60 
-                        ? "Estratégia Custo: Foco total no menor valor." 
-                        : pesoPreco <= 40 
-                        ? "Estratégia Urgência: Foco total na entrega rápida."
-                        : "Estratégia Equilibrada: Busca o melhor balanço."
-                    }
-                </p>
-            </div>
+            )}
         </div>
 
         {/* Seção 4: Prazos e Foto */}
