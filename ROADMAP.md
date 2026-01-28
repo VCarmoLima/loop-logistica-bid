@@ -29,7 +29,7 @@ Foco em usabilidade e navegação do sistema.
 Implementação do Score dinâmico e refinamento da análise de dados.
 
 - [x] **Painel Geral:**
-    - [x] Transformar painel em uma experiência Mobile-First de alto nível.
+    - [x] Transformar painel responsívo a mobile.
 - [x] **Novo BID:**
     - [x] Termômetro de Importância: Criar slider dinâmico para peso Preço vs. Prazo (Padrão 70/30).
     - [x] Implementar *Double Check* (confirmação) antes de publicar o BID.
@@ -39,18 +39,18 @@ Implementação do Score dinâmico e refinamento da análise de dados.
     - [ ] Ajustar textos dos rankings para evitar abreviações.
     - [ ] Incluir coluna de "Prazo" na tela de seleção de vencedor.
     - [ ] Criar sistema de templates de justificativa para escolha do vencedor (com campo livre opcional).
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+    - [ ] Transformar painel responsívo a mobile.
 - [ ] **Aprovação Final:**
     - [ ] Adicionar termômetro utilizado pelo analista para compor o BID junto a justificativa.
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+    - [ ] Transformar painel responsívo a mobile.
 - [ ] **Histórico Admin:**
     - [ ] Implementar filtros avançados: Data, Criador do BID (Meus BIDs), Tipo de Operação e Ordenação Cronológica.
     - [ ] Implementar download de PDFs em massa, de acordo com filtros.
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+    - [ ] Transformar painel responsívo a mobile.
 - [ ] **Acessos:**
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+    - [ ] Transformar painel responsívo a mobile.
 - [ ] **Minha Conta:**
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
+    - [ ] Transformar painel responsívo a mobile.
 
 ## 🟠 Experiência do Transportador
 Refinamento da jornada de quem oferta os lances.
@@ -58,14 +58,11 @@ Refinamento da jornada de quem oferta os lances.
 - [ ] **Card de BID:**
     - [x] Adicionar botão de "Informações Detalhadas" (Imagem inteira do veículo, endereços completos não apenas cidade).
     - [x] Tornar o Card dinâmico: destacar Preço ou Prazo conforme o "Termômetro" definido pelo Admin.
-    - [x] Transformar painel em uma experiência Mobile-First de alto nível.
+    - [x] Transformar painel responsívo a mobile.
 - [x] **Segurança de Lance:**
     - [x] Implementar *Double Check* no envio de lances para evitar erros de digitação (ex: R$ 50,00 vs R$ 5.000,00).
 - [ ] **Histórico e Consistência:**
     - [ ] Auditar e corrigir divergência de dados entre diferentes contas de transportadores.
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
- - [ ] **Minha Conta:**
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 
 ## 🔵 Comunicação e Notificações (E-mail & Canais)
 Automação de alertas seguindo normas de privacidade (LGPD).
