@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { 
     Upload, Save, Truck, MapPin, Calendar, FileText, Building2, 
-    Sliders, AlertTriangle, X, CheckCircle, Percent, 
-    Clock
+    Sliders, AlertTriangle, X, CheckCircle, Percent, Clock 
 } from 'lucide-react'
 
 // Inicializa Supabase
@@ -50,7 +49,6 @@ export default function NovoBidPage() {
 
   // ESTRATÉGIA (PESOS)
   const [pesoPreco, setPesoPreco] = useState(70)
-  // pesoPrazo é derivado (100 - pesoPreco)
 
   // Estilos
   const inputStyle = "w-full p-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-500"
@@ -155,20 +153,42 @@ export default function NovoBidPage() {
       return !!data 
   }
 
-  // ETAPA 1: Abrir Modal de Confirmação (Double Check)
+  // --- LÓGICA DE CORES DO SLIDER ---
+  const getStrategyColors = () => {
+      if (pesoPreco >= 45 && pesoPreco <= 55) {
+          // Equilibrado (Amarelo / Amarelo)
+          return {
+              priceText: 'text-yellow-600',
+              deadlineText: 'text-yellow-600',
+              sliderAccent: 'accent-yellow-500'
+          }
+      } else if (pesoPreco > 55) {
+          // Foco Preço (Verde / Amarelo)
+          return {
+              priceText: 'text-green-600',
+              deadlineText: 'text-yellow-600',
+              sliderAccent: 'accent-green-600'
+          }
+      } else {
+          // Foco Prazo (Amarelo / Verde)
+          return {
+              priceText: 'text-yellow-600',
+              deadlineText: 'text-green-600',
+              sliderAccent: 'accent-green-600'
+          }
+      }
+  }
+  const colors = getStrategyColors()
+
   const handlePreSubmit = (e: React.FormEvent) => {
       e.preventDefault()
-      
-      // Validações básicas antes de abrir o modal
       if (!formData.titulo || !formData.origem || !formData.destino || !formData.prazo_data || !formData.prazo_hora) {
           alert('Por favor, preencha todos os campos obrigatórios.')
           return
       }
-      
       setShowConfirm(true)
   }
 
-  // ETAPA 2: Envio Real
   const handleFinalSubmit = async () => {
     setLoading(true)
 
@@ -225,7 +245,6 @@ export default function NovoBidPage() {
             prazo_limite: prazo_limite,
             status: 'ABERTO',
             imagem_url: imagem_url,
-            // NOVOS CAMPOS DE ESTRATÉGIA
             peso_preco: pesoPreco,
             peso_prazo: 100 - pesoPreco,
             log_criacao: `Sistema Web em ${new Date().toLocaleString()}`
@@ -501,20 +520,24 @@ export default function NovoBidPage() {
             </div>
         </div>
 
-        {/* Seção 3: Estratégia do Leilão (NOVA) */}
+        {/* Seção 3: Estratégia do Leilão (RESPONSIVO + CORES DINÂMICAS) */}
         <div className="p-6 border-b border-gray-100">
             <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
                 <Sliders size={16} /> Estratégia de Homologação
             </h2>
             
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                <div className="flex justify-between items-end mb-4">
-                    <div className="text-center w-1/3">
-                        <span className="block text-xs font-bold text-green-700 uppercase mb-1">Peso do Preço</span>
-                        <span className="text-3xl font-extrabold text-gray-900">{pesoPreco}%</span>
+            <div className="bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200">
+                {/* RESPONSIVIDADE: No mobile (flex-col), o slider (ordem 1) fica em cima */}
+                <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-0 mb-4">
+                    
+                    {/* Bloco 1: Peso Preço (Ordem 2 no mobile) */}
+                    <div className="text-center w-full md:w-1/3 order-2 md:order-1">
+                        <span className={`block text-xs font-bold uppercase mb-1 ${colors.priceText}`}>Peso do Preço</span>
+                        <span className={`text-4xl md:text-3xl font-extrabold ${colors.priceText}`}>{pesoPreco}%</span>
                     </div>
                     
-                    <div className="w-1/3 px-4 pb-2">
+                    {/* Bloco 2: Slider (Ordem 1 no mobile - Topo) */}
+                    <div className="w-full md:w-1/3 px-2 pb-2 order-1 md:order-2">
                          <input 
                             type="range" 
                             min="10" 
@@ -522,27 +545,29 @@ export default function NovoBidPage() {
                             step="5"
                             value={pesoPreco} 
                             onChange={(e) => setPesoPreco(Number(e.target.value))}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900"
+                            className={`w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer ${colors.sliderAccent}`}
                         />
-                         <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-bold">
+                         {/* Legenda do Slider */}
+                         <div className="flex justify-between text-[10px] text-gray-400 mt-2 font-bold px-1">
                             <span>Priorizar Prazo</span>
                             <span>Equilibrado</span>
                             <span>Priorizar Preço</span>
                          </div>
                     </div>
 
-                    <div className="text-center w-1/3">
-                        <span className="block text-xs font-bold text-blue-700 uppercase mb-1">Peso do Prazo</span>
-                        <span className="text-3xl font-extrabold text-gray-900">{100 - pesoPreco}%</span>
+                    {/* Bloco 3: Peso Prazo (Ordem 3 no mobile) */}
+                    <div className="text-center w-full md:w-1/3 order-3 md:order-3">
+                        <span className={`block text-xs font-bold uppercase mb-1 ${colors.deadlineText}`}>Peso do Prazo</span>
+                        <span className={`text-4xl md:text-3xl font-extrabold ${colors.deadlineText}`}>{100 - pesoPreco}%</span>
                     </div>
                 </div>
                 
-                <p className="text-xs text-center text-gray-500 bg-white p-2 rounded border border-gray-200">
-                    {pesoPreco >= 70 
-                        ? "Estratégia Focada em Custo: O sistema dará preferência total para lances mais baratos." 
+                <p className="text-xs text-center text-gray-500 bg-white p-3 rounded border border-gray-200 shadow-sm leading-relaxed">
+                    {pesoPreco >= 60 
+                        ? "Estratégia Custo: Foco total no menor valor." 
                         : pesoPreco <= 40 
-                        ? "Estratégia Focada em Urgência: O sistema dará preferência total para quem entrega mais rápido."
-                        : "Estratégia Equilibrada: O sistema busca o melhor balanço entre preço e prazo."
+                        ? "Estratégia Urgência: Foco total na entrega rápida."
+                        : "Estratégia Equilibrada: Busca o melhor balanço."
                     }
                 </p>
             </div>
@@ -604,7 +629,7 @@ export default function NovoBidPage() {
                 Cancelar
             </button>
             <button 
-                type="submit" // Agora dispara o handlePreSubmit
+                type="submit"
                 disabled={loading}
                 className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all disabled:opacity-50 hover:-translate-y-0.5"
             >
@@ -659,13 +684,13 @@ export default function NovoBidPage() {
                     <div className="border-t border-gray-100 pt-4">
                          <span className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Estratégia Definida</span>
                          <div className="flex gap-4">
-                             <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded border border-green-100">
-                                 <Percent size={12} className="text-green-700"/>
-                                 <span className="text-xs font-bold text-green-800">Preço: {pesoPreco}%</span>
+                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded border border-gray-100 bg-gray-50`}>
+                                 <Percent size={12} className={colors.priceText}/>
+                                 <span className={`text-xs font-bold ${colors.priceText}`}>Preço: {pesoPreco}%</span>
                              </div>
-                             <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded border border-blue-100">
-                                 <Clock size={12} className="text-blue-700"/>
-                                 <span className="text-xs font-bold text-blue-800">Prazo: {100 - pesoPreco}%</span>
+                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded border border-gray-100 bg-gray-50`}>
+                                 <Clock size={12} className={colors.deadlineText}/>
+                                 <span className={`text-xs font-bold ${colors.deadlineText}`}>Prazo: {100 - pesoPreco}%</span>
                              </div>
                          </div>
                     </div>
