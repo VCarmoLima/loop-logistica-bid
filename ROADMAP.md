@@ -11,9 +11,9 @@ Este documento detalha as etapas de desenvolvimento, melhorias de interface, imp
 ## 🟢 Interface (UX/UI) e Estrutura Base
 Foco em usabilidade e navegação do sistema.
 
-- [ ] **Página de Login:**
-    - [ ] Reservar espaço superior para o logotipo da empresa/projeto.
-    - [ ] Implementar sistema de recuperação de senha.
+- [x] **Página de Login:**
+    - [x] Reservar espaço superior para o logotipo da empresa/projeto.
+    - [x] Implementar sistema de recuperação de senha.
 - [x] **Sidebar Dinâmica:**
     - [x] Implementar comportamento *hover* (expandir ao passar o mouse).
     - [x] Adicionar botão de alternância para fixar/desafixar a barra.
