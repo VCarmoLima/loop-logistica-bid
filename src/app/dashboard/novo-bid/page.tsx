@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { 
     Upload, Save, Truck, MapPin, Calendar, FileText, Building2, 
-    Sliders, AlertTriangle, X, CheckCircle, Percent, Clock 
+    Sliders, AlertTriangle, X, CheckCircle, Percent, Clock, 
+    Key,
+    Power,
+    Info,
+    ImageIcon
 } from 'lucide-react'
 
 // Inicializa Supabase
@@ -48,8 +52,16 @@ export default function NovoBidPage() {
   const [showConfirm, setShowConfirm] = useState(false)
 
   // ESTRATÉGIA (PESOS)
-  const [usarEstrategia, setUsarEstrategia] = useState(false) // <--- NOVO: Começa desativado (Padrão)
-  const [pesoPreco, setPesoPreco] = useState(70) // Mantém 70 como base
+  const [usarEstrategia, setUsarEstrategia] = useState(false)
+  const [pesoPreco, setPesoPreco] = useState(70)
+
+  // Função que força a volta para 70/30 se desmarcar
+  const handleToggleStrategy = (checked: boolean) => {
+      setUsarEstrategia(checked)
+      if (!checked) {
+          setPesoPreco(70)
+      }
+  }
 
   // Estilos
   const inputStyle = "w-full p-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-500"
@@ -533,7 +545,7 @@ export default function NovoBidPage() {
                     <input 
                         type="checkbox" 
                         checked={usarEstrategia} 
-                        onChange={(e) => setUsarEstrategia(e.target.checked)} 
+                        onChange={(e) => handleToggleStrategy(e.target.checked)} 
                         className={checkboxStyle}
                     />
                     <span className="text-xs font-bold text-red-600">
@@ -669,13 +681,15 @@ export default function NovoBidPage() {
 
       </form>
 
-      {/* --- MODAL DE DOUBLE CHECK --- */}
+      {/* --- ALTERAÇÃO 3: NOVO MODAL DE DOUBLE CHECK DETALHADO --- */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                
+                {/* Cabeçalho */}
                 <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
                     <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                        <AlertTriangle size={18} className="text-yellow-500"/> Confirmar Publicação
+                        <AlertTriangle size={18} className="text-yellow-600"/> Confirmar Publicação do BID
                     </h3>
                     <button onClick={() => setShowConfirm(false)} className="text-gray-400 hover:text-gray-600">
                         <X size={20} />
@@ -683,60 +697,143 @@ export default function NovoBidPage() {
                 </div>
 
                 <div className="p-6 overflow-y-auto space-y-6">
-                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-xs text-yellow-800 mb-4">
-                        Por favor, revise os dados abaixo. Após publicado, o BID estará visível para todas as transportadoras.
+                    {/* Alerta de Atenção */}
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100 text-sm text-yellow-800 flex items-start gap-3">
+                        <Info size={20} className="flex-shrink-0 mt-0.5 text-yellow-600"/>
+                        <div>
+                            <strong>Atenção:</strong> Revise todos os dados abaixo cuidadosamente. <br/>
+                            Após a confirmação, o leilão ficará visível imediatamente para a rede de transportadoras.
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* GRUPO 1: Identificação */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 border-b border-gray-100 pb-6">
                         <div>
-                            <span className="block text-[10px] font-bold text-gray-400 uppercase">Código</span>
-                            <span className="block text-sm font-bold text-gray-900">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Código do BID</span>
+                            <span className="text-base font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded inline-block">
                                 {usarSufixo && sufixoId ? `${formData.codigo_base}-${sufixoId.toUpperCase()}` : formData.codigo_base}
                             </span>
                         </div>
                         <div>
-                            <span className="block text-[10px] font-bold text-gray-400 uppercase">Qtd. / Categoria</span>
-                            <span className="block text-sm font-medium text-gray-900">{formData.quantidade_veiculos}x {formData.categoria_veiculo}</span>
-                        </div>
-                        <div className="col-span-2">
-                            <span className="block text-[10px] font-bold text-gray-400 uppercase">Veículo</span>
-                            <span className="block text-sm font-bold text-gray-900">{formData.titulo}</span>
-                        </div>
-                        <div className="col-span-2">
-                             <div className="flex items-center gap-2 text-xs bg-gray-50 p-2 rounded">
-                                <span className="font-bold text-gray-500">Origem:</span> {formData.origem}
-                                <span className="text-gray-300">➝</span>
-                                <span className="font-bold text-gray-500">Destino:</span> {formData.destino}
-                             </div>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Data de Criação</span>
+                            <span className="text-sm font-medium text-gray-700">{new Date().toLocaleDateString()} (Hoje)</span>
                         </div>
                     </div>
 
-                    <div className="border-t border-gray-100 pt-4">
-                         <span className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Estratégia Definida</span>
-                         <div className="flex gap-4">
-                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded border border-gray-100 bg-gray-50`}>
-                                 <Percent size={12} className={colors.priceText}/>
-                                 <span className={`text-xs font-bold ${colors.priceText}`}>Preço: {pesoPreco}%</span>
-                             </div>
-                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded border border-gray-100 bg-gray-50`}>
-                                 <Clock size={12} className={colors.deadlineText}/>
-                                 <span className={`text-xs font-bold ${colors.deadlineText}`}>Prazo: {100 - pesoPreco}%</span>
-                             </div>
-                         </div>
+                    {/* GRUPO 2: Veículo Completo */}
+                    <div>
+                        <h4 className="text-xs font-bold text-red-600 uppercase mb-3 flex items-center gap-2">
+                            <Truck size={14}/> Detalhes do Veículo
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="col-span-2">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">Modelo / Versão</span>
+                                <p className="text-sm font-bold text-gray-900 line-clamp-1" title={formData.titulo}>{formData.titulo}</p>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">Placa</span>
+                                <p className="text-sm font-bold text-gray-900 uppercase">{formData.placa || '---'}</p>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">Qtd.</span>
+                                <p className="text-sm font-bold text-gray-900">{formData.quantidade_veiculos}x</p>
+                            </div>
+                            <div className="col-span-2">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">Tipo de Operação</span>
+                                <p className="text-xs font-medium text-gray-700 bg-white px-2 py-1 rounded border border-gray-200 inline-block mt-1">{formData.tipo_transporte}</p>
+                            </div>
+                            {/* Condições (Chave/Funciona) */}
+                            <div className="col-span-2 flex gap-4 mt-1">
+                                <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded border ${formData.possui_chave ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                                    <Key size={12}/> {formData.possui_chave ? 'Com Chave' : 'Sem Chave'}
+                                </span>
+                                <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded border ${formData.funciona ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                                    <Power size={12}/> {formData.funciona ? 'Funciona' : 'Não Funciona'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
+
+                    {/* GRUPO 3: Logística Completa */}
+                    <div>
+                        <h4 className="text-xs font-bold text-red-600 uppercase mb-3 flex items-center gap-2">
+                            <MapPin size={14}/> Rota Logística
+                        </h4>
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="relative pl-4 border-l-2 border-gray-200 space-y-4">
+                                {/* Origem */}
+                                <div>
+                                    <div className="absolute -left-[9px] top-0 w-4 h-4 bg-white border-2 border-red-500 rounded-full"></div>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Origem (Retirada)</span>
+                                    <p className="text-sm font-bold text-gray-900">{formData.origem}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{formData.endereco_retirada || 'Endereço não informado'}</p>
+                                </div>
+                                {/* Destino */}
+                                <div>
+                                    <div className="absolute -left-[9px] top-10 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-sm"></div>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Destino (Entrega)</span>
+                                    <p className="text-sm font-bold text-gray-900">{formData.destino}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{formData.endereco_entrega || 'Endereço não informado'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* GRUPO 4: Prazos e Estratégia */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                                <Clock size={14}/> Encerramento
+                            </h4>
+                            <div className="flex gap-2">
+                                <div className="bg-white px-3 py-2 rounded border border-gray-200">
+                                    <span className="block text-[10px] text-gray-400">Data</span>
+                                    <span className="text-sm font-bold text-gray-900">{formData.prazo_data.split('-').reverse().join('/')}</span>
+                                </div>
+                                <div className="bg-white px-3 py-2 rounded border border-gray-200">
+                                    <span className="block text-[10px] text-gray-400">Hora</span>
+                                    <span className="text-sm font-bold text-gray-900">{formData.prazo_hora}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                                <Sliders size={14}/> Estratégia
+                            </h4>
+                            {/* Mostra sempre, mesmo que seja o padrão 70/30 */}
+                            <div className="flex gap-2">
+                                <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded border border-gray-200 bg-white`}>
+                                    <Percent size={12} className={colors.priceText}/>
+                                    <span className={`text-xs font-bold ${colors.priceText}`}>Preço: {pesoPreco}%</span>
+                                </div>
+                                <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded border border-gray-200 bg-white`}>
+                                    <Clock size={12} className={colors.deadlineText}/>
+                                    <span className={`text-xs font-bold ${colors.deadlineText}`}>Prazo: {100 - pesoPreco}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Check de Imagem */}
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <ImageIcon size={14} />
+                        {imagemFile ? `Imagem anexada: ${imagemFile.name}` : 'Sem imagem do veículo (Será usado ícone padrão)'}
+                    </div>
+
                 </div>
 
                 <div className="p-4 bg-gray-50 border-t flex gap-3 justify-end">
                     <button 
                         onClick={() => setShowConfirm(false)}
-                        className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg"
+                        className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
                     >
                         Voltar e Editar
                     </button>
                     <button 
                         onClick={handleFinalSubmit}
                         disabled={loading}
-                        className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50"
+                        className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5"
                     >
                         {loading ? 'Publicando...' : <><CheckCircle size={16} /> CONFIRMAR E PUBLICAR</>}
                     </button>
@@ -744,6 +841,6 @@ export default function NovoBidPage() {
             </div>
         </div>
       )}
-    </div>
+        </div>
   )
 }
