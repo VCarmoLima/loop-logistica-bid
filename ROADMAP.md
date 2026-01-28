@@ -30,10 +30,9 @@ Implementação do Score dinâmico e refinamento da análise de dados.
 
 - [x] **Painel Geral:**
     - [x] Transformar painel em uma experiência Mobile-First de alto nível.
-- [ ] **Novo BID:**
-    - [ ] Ordenação lógica da lista de pátios.
-    - [ ] Termômetro de Importância: Criar slider dinâmico para peso Preço vs. Prazo (Padrão 70/30).
-    - [ ] Implementar *Double Check* (confirmação) antes de publicar o BID.
+- [x] **Novo BID:**
+    - [x] Termômetro de Importância: Criar slider dinâmico para peso Preço vs. Prazo (Padrão 70/30).
+    - [x] Implementar *Double Check* (confirmação) antes de publicar o BID.
     - [x] Adicionar categorias padrões dos veículos
 - [ ] **Monitoramento e Análise:**
     - [ ] Exibir líderes em tempo real por: Preço, Prazo e Score (ponderado).
@@ -42,6 +41,7 @@ Implementação do Score dinâmico e refinamento da análise de dados.
     - [ ] Criar sistema de templates de justificativa para escolha do vencedor (com campo livre opcional).
     - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 - [ ] **Aprovação Final:**
+    - [ ] Adicionar termômetro utilizado pelo analista para compor o BID junto a justificativa.
     - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 - [ ] **Histórico Admin:**
     - [ ] Implementar filtros avançados: Data, Criador do BID (Meus BIDs), Tipo de Operação e Ordenação Cronológica.
@@ -57,7 +57,7 @@ Refinamento da jornada de quem oferta os lances.
 
 - [ ] **Card de BID:**
     - [x] Adicionar botão de "Informações Detalhadas" (Imagem inteira do veículo, endereços completos não apenas cidade).
-    - [ ] Tornar o Card dinâmico: destacar Preço ou Prazo conforme o "Termômetro" definido pelo Admin.
+    - [x] Tornar o Card dinâmico: destacar Preço ou Prazo conforme o "Termômetro" definido pelo Admin.
     - [x] Transformar painel em uma experiência Mobile-First de alto nível.
 - [x] **Segurança de Lance:**
     - [x] Implementar *Double Check* no envio de lances para evitar erros de digitação (ex: R$ 50,00 vs R$ 5.000,00).
@@ -90,6 +90,7 @@ Finalização para apresentação profissional e deploy.
 
 - [ ] **Geração de PDF:**
     - [ ] Refatorar o layout dos relatórios para um design mais profissional e corporativo.
+    - [ ] Adicionar termômetro utilizado pelo analista para compor o BID junto a justificativa.
 - [x] **GitHub:**
     - [x] Atualizar Tags e descrição do repositório.
     - [x] Criar `README.md` com prints, fluxo de funcionamento e tecnologias utilizadas.
