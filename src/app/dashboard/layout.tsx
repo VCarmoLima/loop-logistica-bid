@@ -232,7 +232,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }}
                 />
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
-                  Gestão de Fretes
+                  Sistema de BIDs
                 </span>
               </>
             ) : (
@@ -242,7 +242,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <span className="text-2xl font-semibold text-red-600 ml-1">Logístico</span>
                 </div>
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] block mt-1">
-                  Gestão de Fretes
+                  Sistema de BIDs
                 </span>
               </div>
             )}
