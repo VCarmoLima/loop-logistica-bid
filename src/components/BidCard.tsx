@@ -308,7 +308,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                                 <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                                     <p className="text-sm font-medium text-gray-900 leading-snug">
                                         {/* Mostra o texto COMPLETO aqui */}
-                                        {bid.origem}
+                                        {bid.endereco_retirada}
                                     </p>
                                 </div>
                             </div>
@@ -319,7 +319,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                                 <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                                     <p className="text-sm font-medium text-gray-900 leading-snug">
                                         {/* Mostra o texto COMPLETO aqui */}
-                                        {bid.destino}
+                                        {bid.endereco_entrega}
                                     </p>
                                 </div>
                             </div>
