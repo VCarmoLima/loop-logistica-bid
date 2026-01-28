@@ -80,21 +80,21 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
   const strategyConfig = {
       price: {
           label: 'Foco: MENOR PREÇO',
-          colorClass: 'text-green-700 bg-green-50 border-green-100',
-          priceBoxClass: 'bg-green-50 border-green-200 ring-1 ring-green-500/20', // Destaque Verde
-          deadlineBoxClass: 'bg-gray-50 border-gray-200 opacity-80' // Neutro
+          colorClass: 'text-gray-700 bg-gray-50 border-gray-100',
+          priceBoxClass: 'bg-gray-50 border-gray-200 ring-1 ring-gray-500/20', 
+          deadlineBoxClass: 'bg-gray-50 border-gray-200 opacity-80' 
       },
       deadline: {
           label: 'Foco: RAPIDEZ (PRAZO)',
-          colorClass: 'text-green-700 bg-green-50 border-green-100',
-          priceBoxClass: 'bg-green-50 border-green-200 ring-1 ring-green-500/20', // Destaque Verde
-          deadlineBoxClass: 'bg-gray-50 border-gray-200 opacity-80' // Neutro
+          colorClass: 'text-gray-700 bg-gray-50 border-gray-100',
+          priceBoxClass: 'bg-gray-50 border-gray-200 ring-1 ring-gray-500/20', 
+          deadlineBoxClass: 'bg-gray-50 border-gray-200 opacity-80' 
       },
       balanced: {
           label: 'Estratégia: EQUILIBRADA',
-          colorClass: 'text-yellow-700 bg-yellow-50 border-yellow-100',
-          priceBoxClass: 'bg-yellow-50/50 border-yellow-200', 
-          deadlineBoxClass: 'bg-yellow-50/50 border-yellow-200' 
+          colorClass: 'text-gray-700 bg-gray-50 border-gray-100',
+          priceBoxClass: 'bg-gray-50 border-gray-200 ring-1 ring-gray-500/20', 
+          deadlineBoxClass: 'bg-gray-50 border-gray-200 opacity-80' 
       }
   }
   
