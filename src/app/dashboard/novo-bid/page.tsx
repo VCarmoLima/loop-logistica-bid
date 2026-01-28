@@ -11,6 +11,7 @@ import {
     Info,
     ImageIcon
 } from 'lucide-react'
+import { gerarEmailHtml } from '@/lib/email-template'
 
 // Inicializa Supabase
 const supabase = createClient(
@@ -264,6 +265,51 @@ export default function NovoBidPage() {
         })
 
         if (insertError) throw insertError
+
+        try {
+            // 1. Busca e-mails de todas as transportadoras
+            const { data: transportadoras } = await supabase
+                .from('transportadoras')
+                .select('email')
+            
+            if (transportadoras && transportadoras.length > 0) {
+                // Filtra nulos e cria array de strings
+                const listaEmails = transportadoras.map(t => t.email).filter(Boolean)
+
+                // 2. Monta o Conteúdo Interno (O recheio do sanduíche)
+                const conteudoEmail = `
+                    <p>Um novo processo de cotação foi aberto e corresponde ao seu perfil.</p>
+                    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>Veículo:</strong> ${formData.titulo}</p>
+                        <p style="margin: 5px 0;"><strong>Rota:</strong> ${formData.origem} ➝ ${formData.destino}</p>
+                        <p style="margin: 5px 0;"><strong>Encerramento:</strong> ${formData.prazo_data.split('-').reverse().join('/')} às ${formData.prazo_hora}</p>
+                    </div>
+                    <p style="font-size: 13px;">Acesse o painel para visualizar fotos e dar seu lance.</p>
+                `
+
+                // 3. Gera o HTML Final usando o Template Padrão
+                const htmlFinal = gerarEmailHtml(
+                    'Nova Oportunidade Disponível 🚚', 
+                    conteudoEmail, 
+                    `${window.location.origin}/dashboard`, 
+                    'VER DETALHES E COTAR'
+                )
+
+                // 4. Envia via API (Usando BCC para LGPD)
+                await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: 'viniciuscarmo.contato@gmail.com', // Envia para você (Admin) para registro
+                        bcc: listaEmails, // Oculto para todas as transportadoras
+                        subject: `Nova Cotação: ${formData.titulo}`,
+                        html: htmlFinal
+                    })
+                })
+            }
+        } catch (emailError) {
+            console.error("Erro no envio de e-mail:", emailError)
+        }
 
         alert(`BID Criado com Sucesso! Código: ${codigoFinal}`)
         setShowConfirm(false)
