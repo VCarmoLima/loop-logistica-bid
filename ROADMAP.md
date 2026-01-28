@@ -34,7 +34,6 @@ Implementação do Score dinâmico e refinamento da análise de dados.
     - [ ] Ordenação lógica da lista de pátios.
     - [ ] **Termômetro de Importância:** Criar slider dinâmico para peso Preço vs. Prazo (Padrão 70/30).
     - [ ] Implementar *Double Check* (confirmação) antes de publicar o BID.
-    - [ ] Transformar painel em uma experiência Mobile-First de alto nível.
 - [ ] **Monitoramento e Análise:**
     - [ ] Exibir líderes em tempo real por: Preço, Prazo e Score (ponderado).
     - [ ] Ajustar textos dos rankings para evitar abreviações.
