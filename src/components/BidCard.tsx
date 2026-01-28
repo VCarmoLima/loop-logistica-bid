@@ -351,13 +351,13 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
         {showConfirm && parsedValues && (
              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in zoom-in-95 duration-200">
                  <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden">
-                    <div className="bg-yellow-50 p-4 border-b border-yellow-100 flex items-center gap-3">
-                        <div className="bg-yellow-100 p-2 rounded-full text-yellow-600">
+                    <div className="bg-red-50 p-4 border-b border-red-100 flex items-center gap-3">
+                        <div className="bg-red-100 p-2 rounded-full text-red-600">
                             <AlertTriangle size={24} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-yellow-800">Confirme seu Lance</h3>
-                            <p className="text-xs text-yellow-700">Evite erros de digitação</p>
+                            <h3 className="text-lg font-bold text-red-800">Confirme seu Lance</h3>
+                            <p className="text-xs text-red-700">Evite erros de digitação</p>
                         </div>
                     </div>
 
@@ -365,7 +365,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                         <p className="text-sm text-gray-500">Você está prestes a enviar uma oferta de:</p>
                         
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>
+                            <div className="absolute top-0 left-0 w-1 h-full bg-red-400"></div>
                             <p className="text-3xl font-extrabold text-gray-900 tracking-tight">
                                 {formatCurrency(parsedValues.valor)}
                             </p>
