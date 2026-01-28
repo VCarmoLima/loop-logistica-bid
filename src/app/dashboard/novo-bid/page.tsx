@@ -3,7 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import { Upload, Save, Truck, MapPin, Calendar, FileText, Building2 } from 'lucide-react'
+import { 
+    Upload, Save, Truck, MapPin, Calendar, FileText, Building2, 
+    Sliders, AlertTriangle, X, CheckCircle, Percent, 
+    Clock
+} from 'lucide-react'
 
 // Inicializa Supabase
 const supabase = createClient(
@@ -40,6 +44,13 @@ export default function NovoBidPage() {
   // Controle do Sufixo do ID
   const [usarSufixo, setUsarSufixo] = useState(false)
   const [sufixoId, setSufixoId] = useState('')
+
+  // MODAL DE CONFIRMAÇÃO
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  // ESTRATÉGIA (PESOS)
+  const [pesoPreco, setPesoPreco] = useState(70)
+  // pesoPrazo é derivado (100 - pesoPreco)
 
   // Estilos
   const inputStyle = "w-full p-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-500"
@@ -135,18 +146,30 @@ export default function NovoBidPage() {
       }
   }
 
-  // --- NOVA FUNÇÃO: Verificar se código existe no banco ---
   const checkCodigoExiste = async (codigo: string) => {
       const { data } = await supabase
           .from('bids')
           .select('id')
           .eq('codigo_unico', codigo)
           .maybeSingle()
-      return !!data // Retorna true se encontrou registro
+      return !!data 
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // ETAPA 1: Abrir Modal de Confirmação (Double Check)
+  const handlePreSubmit = (e: React.FormEvent) => {
+      e.preventDefault()
+      
+      // Validações básicas antes de abrir o modal
+      if (!formData.titulo || !formData.origem || !formData.destino || !formData.prazo_data || !formData.prazo_hora) {
+          alert('Por favor, preencha todos os campos obrigatórios.')
+          return
+      }
+      
+      setShowConfirm(true)
+  }
+
+  // ETAPA 2: Envio Real
+  const handleFinalSubmit = async () => {
     setLoading(true)
 
     try {
@@ -162,7 +185,6 @@ export default function NovoBidPage() {
 
         const prazo_limite = new Date(`${formData.prazo_data}T${formData.prazo_hora}:00`).toISOString()
 
-        // --- LÓGICA DE BLINDAGEM DE CÓDIGO ÚNICO ---
         let codigoFinal = usarSufixo && sufixoId.trim() 
             ? `${formData.codigo_base}-${sufixoId.trim().toUpperCase()}`
             : formData.codigo_base
@@ -170,29 +192,22 @@ export default function NovoBidPage() {
         let existe = await checkCodigoExiste(codigoFinal)
         let tentativas = 0
 
-        // Se existir, entra no loop para gerar um novo até achar um livre
         while (existe && tentativas < 5) {
             console.log(`Colisão detectada para ${codigoFinal}. Gerando novo...`)
-            
-            // Gera nova base aleatória
             const novaBase = gerarCodigoBid()
-            
-            // Remonta com o mesmo sufixo (se tiver)
             codigoFinal = usarSufixo && sufixoId.trim() 
                 ? `${novaBase}-${sufixoId.trim().toUpperCase()}`
                 : novaBase
-            
-            // Verifica de novo
             existe = await checkCodigoExiste(codigoFinal)
             tentativas++
         }
 
         if (existe) {
-            alert('Erro de Sistema: Não foi possível gerar um ID único após várias tentativas. Por favor, tente novamente.')
+            alert('Erro de Sistema: Não foi possível gerar um ID único.')
             setLoading(false)
+            setShowConfirm(false)
             return
         }
-        // ---------------------------------------------
 
         const { error: insertError } = await supabase.from('bids').insert({
             codigo_unico: codigoFinal,
@@ -210,12 +225,16 @@ export default function NovoBidPage() {
             prazo_limite: prazo_limite,
             status: 'ABERTO',
             imagem_url: imagem_url,
+            // NOVOS CAMPOS DE ESTRATÉGIA
+            peso_preco: pesoPreco,
+            peso_prazo: 100 - pesoPreco,
             log_criacao: `Sistema Web em ${new Date().toLocaleString()}`
         })
 
         if (insertError) throw insertError
 
         alert(`BID Criado com Sucesso! Código: ${codigoFinal}`)
+        setShowConfirm(false)
         router.push('/dashboard') 
 
     } catch (error: any) {
@@ -238,7 +257,7 @@ export default function NovoBidPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <form onSubmit={handlePreSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         
         {/* Seção 1: Dados do Veículo */}
         <div className="p-6 border-b border-gray-100">
@@ -482,7 +501,54 @@ export default function NovoBidPage() {
             </div>
         </div>
 
-        {/* Seção 3: Prazos e Foto */}
+        {/* Seção 3: Estratégia do Leilão (NOVA) */}
+        <div className="p-6 border-b border-gray-100">
+            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
+                <Sliders size={16} /> Estratégia de Homologação
+            </h2>
+            
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <div className="flex justify-between items-end mb-4">
+                    <div className="text-center w-1/3">
+                        <span className="block text-xs font-bold text-green-700 uppercase mb-1">Peso do Preço</span>
+                        <span className="text-3xl font-extrabold text-gray-900">{pesoPreco}%</span>
+                    </div>
+                    
+                    <div className="w-1/3 px-4 pb-2">
+                         <input 
+                            type="range" 
+                            min="10" 
+                            max="90" 
+                            step="5"
+                            value={pesoPreco} 
+                            onChange={(e) => setPesoPreco(Number(e.target.value))}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900"
+                        />
+                         <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-bold">
+                            <span>Priorizar Prazo</span>
+                            <span>Equilibrado</span>
+                            <span>Priorizar Preço</span>
+                         </div>
+                    </div>
+
+                    <div className="text-center w-1/3">
+                        <span className="block text-xs font-bold text-blue-700 uppercase mb-1">Peso do Prazo</span>
+                        <span className="text-3xl font-extrabold text-gray-900">{100 - pesoPreco}%</span>
+                    </div>
+                </div>
+                
+                <p className="text-xs text-center text-gray-500 bg-white p-2 rounded border border-gray-200">
+                    {pesoPreco >= 70 
+                        ? "Estratégia Focada em Custo: O sistema dará preferência total para lances mais baratos." 
+                        : pesoPreco <= 40 
+                        ? "Estratégia Focada em Urgência: O sistema dará preferência total para quem entrega mais rápido."
+                        : "Estratégia Equilibrada: O sistema busca o melhor balanço entre preço e prazo."
+                    }
+                </p>
+            </div>
+        </div>
+
+        {/* Seção 4: Prazos e Foto */}
         <div className="p-6">
             <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
                 <Calendar size={16} /> Encerramento & Mídia
@@ -538,15 +604,91 @@ export default function NovoBidPage() {
                 Cancelar
             </button>
             <button 
-                type="submit"
+                type="submit" // Agora dispara o handlePreSubmit
                 disabled={loading}
                 className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all disabled:opacity-50 hover:-translate-y-0.5"
             >
-                {loading ? 'Salvando...' : <><Save size={16} /> Publicar BID</>}
+                {loading ? 'Processando...' : <><Save size={16} /> Conferir e Publicar</>}
             </button>
         </div>
 
       </form>
+
+      {/* --- MODAL DE DOUBLE CHECK --- */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                        <AlertTriangle size={18} className="text-yellow-500"/> Confirmar Publicação
+                    </h3>
+                    <button onClick={() => setShowConfirm(false)} className="text-gray-400 hover:text-gray-600">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto space-y-6">
+                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-xs text-yellow-800 mb-4">
+                        Por favor, revise os dados abaixo. Após publicado, o BID estará visível para todas as transportadoras.
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <span className="block text-[10px] font-bold text-gray-400 uppercase">Código</span>
+                            <span className="block text-sm font-bold text-gray-900">
+                                {usarSufixo && sufixoId ? `${formData.codigo_base}-${sufixoId.toUpperCase()}` : formData.codigo_base}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="block text-[10px] font-bold text-gray-400 uppercase">Qtd. / Categoria</span>
+                            <span className="block text-sm font-medium text-gray-900">{formData.quantidade_veiculos}x {formData.categoria_veiculo}</span>
+                        </div>
+                        <div className="col-span-2">
+                            <span className="block text-[10px] font-bold text-gray-400 uppercase">Veículo</span>
+                            <span className="block text-sm font-bold text-gray-900">{formData.titulo}</span>
+                        </div>
+                        <div className="col-span-2">
+                             <div className="flex items-center gap-2 text-xs bg-gray-50 p-2 rounded">
+                                <span className="font-bold text-gray-500">Origem:</span> {formData.origem}
+                                <span className="text-gray-300">➝</span>
+                                <span className="font-bold text-gray-500">Destino:</span> {formData.destino}
+                             </div>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 pt-4">
+                         <span className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Estratégia Definida</span>
+                         <div className="flex gap-4">
+                             <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded border border-green-100">
+                                 <Percent size={12} className="text-green-700"/>
+                                 <span className="text-xs font-bold text-green-800">Preço: {pesoPreco}%</span>
+                             </div>
+                             <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded border border-blue-100">
+                                 <Clock size={12} className="text-blue-700"/>
+                                 <span className="text-xs font-bold text-blue-800">Prazo: {100 - pesoPreco}%</span>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-gray-50 border-t flex gap-3 justify-end">
+                    <button 
+                        onClick={() => setShowConfirm(false)}
+                        className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg"
+                    >
+                        Voltar e Editar
+                    </button>
+                    <button 
+                        onClick={handleFinalSubmit}
+                        disabled={loading}
+                        className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {loading ? 'Publicando...' : <><CheckCircle size={16} /> CONFIRMAR E PUBLICAR</>}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   )
 }
