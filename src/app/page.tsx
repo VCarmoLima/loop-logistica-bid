@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import Cookies from 'js-cookie'
-import { Montserrat } from 'next/font/google' // Fonte do Logo
+import { Montserrat } from 'next/font/google'
 import {
-  Eye, EyeOff, Loader2, User, Lock, AlertCircle, CheckCircle, Mail, ArrowLeft
+  Eye, EyeOff, Loader2, User, Lock, AlertCircle, CheckCircle, Mail, ArrowLeft, Send
 } from 'lucide-react'
 
-// CONFIGURANDO A FONTE DO LOGO (Mesma da Sidebar)
+// CONFIGURANDO A FONTE DO LOGO
 const logoFont = Montserrat({
   subsets: ['latin'],
   weight: ['600', '800'],
@@ -25,12 +25,12 @@ const supabase = createClient(
 export default function LoginPage() {
   const router = useRouter()
 
-  // ESTADOS GERAIS
-  const [view, setView] = useState<'login' | 'forgot'>('login') // Alterna entre Login e Recuperação
+  // ESTADOS
+  const [view, setView] = useState<'login' | 'forgot'>('login')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
-  // ESTADOS DE FORMULÁRIO
+  // FORMULÁRIO
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -38,7 +38,7 @@ export default function LoginPage() {
   // ESTADO DO LOGO
   const [logoError, setLogoError] = useState(false)
 
-  // --- FUNÇÃO DE LOGIN ---
+  // --- LOGIN ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -100,7 +100,7 @@ export default function LoginPage() {
     }
   }
 
-  // --- FUNÇÃO DE RECUPERAÇÃO DE SENHA ---
+  // --- RECUPERAÇÃO ---
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -108,12 +108,13 @@ export default function LoginPage() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`, // Página que você criará depois para definir nova senha
+        redirectTo: `${window.location.origin}/auth/update-password`,
       })
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Link de recuperação enviado para seu e-mail!' })
+      // SUCESSO: Define a mensagem (que ativará a Tela de Sucesso no render)
+      setMessage({ type: 'success', text: 'Link enviado com sucesso!' })
 
     } catch (err: any) {
       setMessage({ type: 'error', text: 'Erro ao enviar e-mail. Verifique o endereço.' })
@@ -126,12 +127,13 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
 
-        {/* Barra de Topo (Mantida) */}
+        {/* Barra de Topo */}
         <div className="h-2 w-full bg-gradient-to-r from-red-600 to-red-800" />
 
         <div className="p-8">
 
-          {/* --- CABEÇALHO COM LOGOTIPO INTELIGENTE --- */}
+          {/* CABEÇALHO / LOGO */}
+          {/* Só mostramos o logo se NÃO estiver na tela de sucesso (para ficar mais limpo) ou mantemos se preferir */}
           <div className="flex flex-col items-center justify-center mb-8 select-none">
             {!logoError ? (
               <>
@@ -161,22 +163,23 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* FEEDBACK DE MENSAGENS */}
-          {message && (
-            <div className={`mb-6 p-3 rounded-md flex items-center gap-2 text-sm border animate-in fade-in slide-in-from-top-2
-              ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}
-            `}>
-              {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+          {/* ÁREA DE FEEDBACK (Apenas Erros) */}
+          {/* Se for sucesso na recuperação, ocultamos aqui pois mostraremos a tela dedicada */}
+          {message && message.type === 'error' && (
+            <div className="mb-6 p-3 rounded-md flex items-center gap-2 text-sm border bg-red-50 text-red-600 border-red-100 animate-in fade-in slide-in-from-top-2">
+              <AlertCircle size={18} />
               {message.text}
             </div>
           )}
 
+          {/* LÓGICA DE NAVEGAÇÃO ENTRE TELAS */}
+
           {view === 'login' ? (
-            /* --- FORMULÁRIO DE LOGIN --- */
-            <form onSubmit={handleLogin} className="space-y-5">
+            /* --- TELA 1: LOGIN --- */
+            <form onSubmit={handleLogin} className="space-y-5 animate-in fade-in slide-in-from-left-4">
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">E-mail Corporativo</label>
                 <div className="relative">
                   <input
                     type="email"
@@ -234,54 +237,75 @@ export default function LoginPage() {
             </form>
 
           ) : (
+            /* --- FLUXO DE RECUPERAÇÃO --- */
 
-            /* --- FORMULÁRIO DE RECUPERAÇÃO --- */
-            <form onSubmit={handleResetPassword} className="space-y-5 animate-in fade-in slide-in-from-right-4">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Recuperar Acesso</h3>
-                <p className="text-xs text-gray-500 mt-1 px-4">
-                  Digite seu e-mail abaixo para receber as instruções de redefinição de senha.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">E-mail Cadastrado</label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-gray-800"
-                    placeholder="seu@email.com"
-                  />
-                  <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+            // SE TIVER SUCESSO, MOSTRA TELA DE "EMAIL ENVIADO"
+            message?.type === 'success' ? (
+              <div className="text-center animate-in zoom-in-95 duration-300">
+                <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4 text-green-600">
+                  <Send size={32} />
                 </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">E-mail Enviado!</h3>
+                <p className="text-sm text-gray-500 mb-6 px-4 leading-relaxed">
+                  Enviamos um link de recuperação para:<br />
+                  <span className="font-semibold text-gray-800">{email}</span>
+                </p>
+
+                <button
+                  onClick={() => { setMessage(null); setView('login'); setEmail(''); setPassword(''); }}
+                  className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-lg transition-all shadow-md flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft size={18} /> Voltar para o Login
+                </button>
               </div>
+            ) : (
+              // SE NÃO TIVER SUCESSO AINDA, MOSTRA O FORMULÁRIO
+              <form onSubmit={handleResetPassword} className="space-y-5 animate-in fade-in slide-in-from-right-4">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Recuperar Acesso</h3>
+                  <p className="text-xs text-gray-500 mt-1 px-4">
+                    Digite seu e-mail abaixo para receber as instruções de redefinição de senha.
+                  </p>
+                </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full py-3 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-md 
-                  ${loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gray-800 hover:bg-gray-900 hover:shadow-lg hover:-translate-y-0.5'}`}
-              >
-                {loading ? <Loader2 className="animate-spin" size={20} /> : 'ENVIAR LINK DE RECUPERAÇÃO'}
-              </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">E-mail Cadastrado</label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-gray-800"
+                      placeholder="seu@email.com"
+                    />
+                    <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+                  </div>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => { setMessage(null); setView('login'); }}
-                className="w-full py-2 text-gray-500 hover:text-gray-900 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-              >
-                <ArrowLeft size={16} /> Voltar para o Login
-              </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full py-3 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-md 
+                        ${loading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gray-800 hover:bg-gray-900 hover:shadow-lg hover:-translate-y-0.5'}`}
+                >
+                  {loading ? <Loader2 className="animate-spin" size={20} /> : 'ENVIAR LINK DE RECUPERAÇÃO'}
+                </button>
 
-            </form>
+                <button
+                  type="button"
+                  onClick={() => { setMessage(null); setView('login'); }}
+                  className="w-full py-2 text-gray-500 hover:text-gray-900 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                >
+                  <ArrowLeft size={16} /> Voltar para o Login
+                </button>
+              </form>
+            )
           )}
 
-          {/* RODAPÉ MANTIDO */}
+          {/* RODAPÉ */}
           <div className="mt-8 text-center border-t border-gray-100 pt-4">
             <p className="text-xs text-gray-400">
               © {new Date().getFullYear()} VCarmoLima — Todos os direitos reservados.
@@ -300,4 +324,4 @@ export default function LoginPage() {
       </div>
     </div>
   )
-} 
+}
