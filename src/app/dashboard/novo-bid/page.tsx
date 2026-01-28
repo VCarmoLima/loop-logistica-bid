@@ -681,166 +681,176 @@ export default function NovoBidPage() {
 
       </form>
 
-      {/* --- ALTERAÇÃO 3: NOVO MODAL DE DOUBLE CHECK DETALHADO --- */}
+      {/* --- MODAL DE DOUBLE CHECK (REDESIGN PROFISSIONAL) --- */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200">
                 
-                {/* Cabeçalho */}
-                <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                        <AlertTriangle size={18} className="text-yellow-600"/> Confirmar Publicação do BID
-                    </h3>
-                    <button onClick={() => setShowConfirm(false)} className="text-gray-400 hover:text-gray-600">
+                {/* 1. Cabeçalho Limpo */}
+                <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900">Revisão de Publicação</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Confira os dados antes de liberar para o mercado.</p>
+                    </div>
+                    <button 
+                        onClick={() => setShowConfirm(false)} 
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="p-6 overflow-y-auto space-y-6">
-                    {/* Alerta de Atenção */}
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100 text-sm text-yellow-800 flex items-start gap-3">
-                        <Info size={20} className="flex-shrink-0 mt-0.5 text-yellow-600"/>
-                        <div>
-                            <strong>Atenção:</strong> Revise todos os dados abaixo cuidadosamente. <br/>
-                            Após a confirmação, o leilão ficará visível imediatamente para a rede de transportadoras.
-                        </div>
-                    </div>
-
-                    {/* GRUPO 1: Identificação */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 border-b border-gray-100 pb-6">
-                        <div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Código do BID</span>
-                            <span className="text-base font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded inline-block">
-                                {usarSufixo && sufixoId ? `${formData.codigo_base}-${sufixoId.toUpperCase()}` : formData.codigo_base}
-                            </span>
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Data de Criação</span>
-                            <span className="text-sm font-medium text-gray-700">{new Date().toLocaleDateString()} (Hoje)</span>
-                        </div>
-                    </div>
-
-                    {/* GRUPO 2: Veículo Completo */}
-                    <div>
-                        <h4 className="text-xs font-bold text-red-600 uppercase mb-3 flex items-center gap-2">
-                            <Truck size={14}/> Detalhes do Veículo
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="col-span-2">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Modelo / Versão</span>
-                                <p className="text-sm font-bold text-gray-900 line-clamp-1" title={formData.titulo}>{formData.titulo}</p>
-                            </div>
+                <div className="p-0 overflow-y-auto flex-1">
+                    
+                    {/* 2. Grid de Informações (Estilo Lista Técnica) */}
+                    <div className="divide-y divide-gray-100">
+                        
+                        {/* Bloco ID e Data */}
+                        <div className="px-6 py-4 bg-gray-50/50 grid grid-cols-2 gap-4">
                             <div>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Placa</span>
-                                <p className="text-sm font-bold text-gray-900 uppercase">{formData.placa || '---'}</p>
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Qtd.</span>
-                                <p className="text-sm font-bold text-gray-900">{formData.quantidade_veiculos}x</p>
-                            </div>
-                            <div className="col-span-2">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Tipo de Operação</span>
-                                <p className="text-xs font-medium text-gray-700 bg-white px-2 py-1 rounded border border-gray-200 inline-block mt-1">{formData.tipo_transporte}</p>
-                            </div>
-                            {/* Condições (Chave/Funciona) */}
-                            <div className="col-span-2 flex gap-4 mt-1">
-                                <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded border ${formData.possui_chave ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                                    <Key size={12}/> {formData.possui_chave ? 'Com Chave' : 'Sem Chave'}
-                                </span>
-                                <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded border ${formData.funciona ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
-                                    <Power size={12}/> {formData.funciona ? 'Funciona' : 'Não Funciona'}
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Código do Processo</span>
+                                <span className="font-mono text-sm font-bold text-gray-900 bg-white px-2 py-1 rounded border border-gray-200 inline-block shadow-sm">
+                                    {usarSufixo && sufixoId ? `${formData.codigo_base}-${sufixoId.toUpperCase()}` : formData.codigo_base}
                                 </span>
                             </div>
+                            <div className="flex flex-col justify-center">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Criação</span>
+                                <span className="text-sm font-medium text-gray-700">{new Date().toLocaleDateString()}</span>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* GRUPO 3: Logística Completa */}
-                    <div>
-                        <h4 className="text-xs font-bold text-red-600 uppercase mb-3 flex items-center gap-2">
-                            <MapPin size={14}/> Rota Logística
-                        </h4>
-                        <div className="grid grid-cols-1 gap-4">
-                            <div className="relative pl-4 border-l-2 border-gray-200 space-y-4">
-                                {/* Origem */}
+                        {/* Bloco Veículo */}
+                        <div className="px-6 py-5">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="p-1.5 bg-red-50 text-red-600 rounded">
+                                    <Truck size={14} strokeWidth={2.5}/>
+                                </div>
+                                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">Dados da Carga</h4>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-6">
+                                <div className="col-span-2">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase block">Modelo / Versão</span>
+                                    <span className="text-sm font-bold text-gray-900">{formData.titulo}</span>
+                                </div>
                                 <div>
-                                    <div className="absolute -left-[9px] top-0 w-4 h-4 bg-white border-2 border-red-500 rounded-full"></div>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Origem (Retirada)</span>
-                                    <p className="text-sm font-bold text-gray-900">{formData.origem}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">{formData.endereco_retirada || 'Endereço não informado'}</p>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase block">Placa</span>
+                                    <span className="text-sm font-medium text-gray-900 uppercase font-mono">{formData.placa || '---'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase block">Quantidade</span>
+                                    <span className="text-sm font-medium text-gray-900">{formData.quantidade_veiculos} unidade(s)</span>
+                                </div>
+                                <div className="col-span-2">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase block">Operação</span>
+                                    <span className="text-sm font-medium text-gray-700">{formData.tipo_transporte}</span>
+                                </div>
+                                {/* Tags Monocromáticas/Neutras */}
+                                <div className="col-span-2 flex gap-3 mt-1">
+                                    <div className="flex items-center gap-1.5 text-xs text-gray-700 font-medium bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">
+                                        <Key size={12} className="text-gray-500"/> 
+                                        {formData.possui_chave ? 'Com Chave' : 'Sem Chave'}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs text-gray-700 font-medium bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">
+                                        <Power size={12} className="text-gray-500"/> 
+                                        {formData.funciona ? 'Funciona' : 'Não Funciona'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bloco Rota (Design Logístico Clean) */}
+                        <div className="px-6 py-5">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="p-1.5 bg-red-50 text-red-600 rounded">
+                                    <MapPin size={14} strokeWidth={2.5}/>
+                                </div>
+                                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">Rota</h4>
+                            </div>
+
+                            <div className="relative pl-3 border-l-2 border-gray-200 ml-2 space-y-6">
+                                {/* Origem */}
+                                <div className="relative">
+                                    <div className="absolute -left-[19px] top-1 w-3 h-3 bg-white border-2 border-red-600 rounded-full"></div>
+                                    <div className="pl-2">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Origem</span>
+                                        <p className="text-sm font-bold text-gray-900">{formData.origem}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{formData.endereco_retirada || 'Endereço pendente'}</p>
+                                    </div>
                                 </div>
                                 {/* Destino */}
+                                <div className="relative">
+                                    <div className="absolute -left-[19px] top-1 w-3 h-3 bg-red-600 rounded-full shadow-sm"></div>
+                                    <div className="pl-2">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Destino</span>
+                                        <p className="text-sm font-bold text-gray-900">{formData.destino}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{formData.endereco_entrega || 'Endereço pendente'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bloco Estratégia (Clean) */}
+                        <div className="px-6 py-5 bg-gray-50/30">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <div className="absolute -left-[9px] top-10 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-sm"></div>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Destino (Entrega)</span>
-                                    <p className="text-sm font-bold text-gray-900">{formData.destino}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">{formData.endereco_entrega || 'Endereço não informado'}</p>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase block mb-2">Encerramento</span>
+                                    <div className="flex items-center gap-2 text-sm text-gray-700 bg-white border border-gray-200 px-3 py-2 rounded-lg shadow-sm w-fit">
+                                        <Calendar size={14} className="text-red-600"/>
+                                        <span className="font-bold">{formData.prazo_data.split('-').reverse().join('/')}</span>
+                                        <span className="text-gray-300">|</span>
+                                        <span>{formData.prazo_hora}</span>
+                                    </div>
                                 </div>
+
+                                <div>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase block mb-2">Regra de Homologação</span>
+                                    <div className="flex gap-3">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-500 font-medium">Peso Preço</span>
+                                            <span className="text-sm font-bold text-gray-900">{pesoPreco}%</span>
+                                        </div>
+                                        <div className="w-px bg-gray-300 h-8 self-center"></div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-500 font-medium">Peso Prazo</span>
+                                            <span className="text-sm font-bold text-gray-900">{100 - pesoPreco}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Check Imagem */}
+                            <div className="mt-4 pt-4 border-t border-gray-200/60 flex items-center gap-2 text-xs text-gray-500">
+                                <ImageIcon size={14} />
+                                {imagemFile ? (
+                                    <span className="text-gray-700 font-medium">Imagem anexada: {imagemFile.name}</span>
+                                ) : (
+                                    <span>Nenhuma foto anexada (Será usado ícone padrão)</span>
+                                )}
                             </div>
                         </div>
                     </div>
-
-                    {/* GRUPO 4: Prazos e Estratégia */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <div>
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
-                                <Clock size={14}/> Encerramento
-                            </h4>
-                            <div className="flex gap-2">
-                                <div className="bg-white px-3 py-2 rounded border border-gray-200">
-                                    <span className="block text-[10px] text-gray-400">Data</span>
-                                    <span className="text-sm font-bold text-gray-900">{formData.prazo_data.split('-').reverse().join('/')}</span>
-                                </div>
-                                <div className="bg-white px-3 py-2 rounded border border-gray-200">
-                                    <span className="block text-[10px] text-gray-400">Hora</span>
-                                    <span className="text-sm font-bold text-gray-900">{formData.prazo_hora}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
-                                <Sliders size={14}/> Estratégia
-                            </h4>
-                            {/* Mostra sempre, mesmo que seja o padrão 70/30 */}
-                            <div className="flex gap-2">
-                                <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded border border-gray-200 bg-white`}>
-                                    <Percent size={12} className={colors.priceText}/>
-                                    <span className={`text-xs font-bold ${colors.priceText}`}>Preço: {pesoPreco}%</span>
-                                </div>
-                                <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded border border-gray-200 bg-white`}>
-                                    <Clock size={12} className={colors.deadlineText}/>
-                                    <span className={`text-xs font-bold ${colors.deadlineText}`}>Prazo: {100 - pesoPreco}%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* Check de Imagem */}
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <ImageIcon size={14} />
-                        {imagemFile ? `Imagem anexada: ${imagemFile.name}` : 'Sem imagem do veículo (Será usado ícone padrão)'}
-                    </div>
-
                 </div>
 
-                <div className="p-4 bg-gray-50 border-t flex gap-3 justify-end">
+                {/* Footer Actions */}
+                <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                     <button 
                         onClick={() => setShowConfirm(false)}
-                        className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                        className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-800 hover:bg-white border border-transparent hover:border-gray-200 rounded-lg transition-all"
                     >
                         Voltar e Editar
                     </button>
                     <button 
                         onClick={handleFinalSubmit}
                         disabled={loading}
-                        className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5"
+                        className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
                     >
-                        {loading ? 'Publicando...' : <><CheckCircle size={16} /> CONFIRMAR E PUBLICAR</>}
+                        {loading ? 'Processando...' : <><CheckCircle size={16} /> CONFIRMAR E PUBLICAR</>}
                     </button>
                 </div>
             </div>
         </div>
       )}
-        </div>
+    </div>
   )
 }
