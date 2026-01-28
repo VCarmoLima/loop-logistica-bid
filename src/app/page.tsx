@@ -157,7 +157,7 @@ export default function LoginPage() {
                   <span className="text-3xl font-semibold text-red-600 ml-1">Logístico</span>
                 </div>
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] block mt-2">
-                  Gestão de Fretes
+                  Sistema de BIDs
                 </span>
               </div>
             )}
