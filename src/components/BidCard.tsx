@@ -66,11 +66,11 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
       if (type === 'funciona') {
           return isTrue 
             ? <span className="flex items-center gap-1 text-gray-700 bg-gray-50 px-2 py-1 rounded text-xs font-bold border border-gray-100"><Power size={12}/> Funciona</span>
-            : <span className="flex items-center gap-1 text-gray-700 bg-gray-50 px-2 py-1 rounded text-xs font-bold border border-gray-100"><Power size={12}/> Não Funciona</span>
+            : <span className="flex items-center gap-1 text-red-600 bg-red-100 px-2 py-1 rounded text-xs font-bold border border-red-200"><Power size={12}/> Não Funciona</span>
       }
       if (type === 'chave') {
           return isTrue
-            ? <span className="flex items-center gap-1 text-red-700 bg-red-50 px-2 py-1 rounded text-xs font-bold border border-red-100"><Key size={12}/> Com Chave</span>
+            ? <span className="flex items-center gap-1 text-gray-700 bg-gray-50 px-2 py-1 rounded text-xs font-bold border border-gray-100"><Key size={12}/> Com Chave</span>
             : <span className="flex items-center gap-1 text-red-600 bg-red-100 px-2 py-1 rounded text-xs font-bold border border-red-200"><Key size={12}/> Sem Chave</span>
       }
   }
@@ -279,8 +279,8 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
                                 <div>
-                                <h3 className="text-xs font-bold text-gray-400 uppercase mb-1">Categoria</h3>
-                                <p className="text-sm font-bold text-gray-800">{bid.categoria_veiculo || '-'}</p>
+                                <h3 className="text-[10px] font-bold text-gray-400 uppercase">Categoria</h3>
+                                <p className="text-sm font-bold text-gray-900">{bid.categoria_veiculo || '-'}</p>
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Modelo</span>
