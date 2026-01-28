@@ -1,8 +1,5 @@
 /* =============================================================================
   SCHEMA DO BANCO DE DADOS - SISTEMA DE BID LOGÍSTICO (SaaS)
-  -----------------------------------------------------------------------------
-  Este script contém a definição completa da estrutura do banco de dados,
-  incluindo tabelas, funções de segurança, RLS (Row Level Security) e Storage.
   =============================================================================
 */
 
@@ -51,7 +48,8 @@ create table if not exists public.bids (
   status text default 'ABERTO',
   imagem_url text,
   vencedor_id uuid,
-  lance_vencedor_id uuid
+  lance_vencedor_id uuid,
+  log_encerramento text
 );
 
 create table if not exists public.lances (
@@ -64,10 +62,8 @@ create table if not exists public.lances (
   auth_id uuid references auth.users(id)
 );
 
--- 2. FUNÇÕES HELPER DE SEGURANÇA (SECURITY DEFINER)
+-- 2. FUNÇÕES HELPER DE SEGURANÇA
 -- ============================================================================
--- Essas funções evitam o "Loop Infinito" (Recursão) nas políticas RLS.
--- Elas rodam com privilégios de superusuário para checar cargos rapidamente.
 
 create or replace function public.is_admin()
 returns boolean as $$
@@ -105,24 +101,22 @@ alter table public.lances enable row level security;
 -- 4. POLÍTICAS DE ACESSO (POLICIES)
 -- ============================================================================
 
-drop policy if exists "Acesso tabela admins" on public.admins;
-drop policy if exists "Acesso tabela transportadoras" on public.transportadoras;
-drop policy if exists "Todos leem patios" on public.patios;
-drop policy if exists "Admins gerenciam patios" on public.patios;
-drop policy if exists "Todos leem bids" on public.bids;
-drop policy if exists "Admins gerenciam bids" on public.bids;
-drop policy if exists "Todos leem lances" on public.lances;
-drop policy if exists "Transportadora insere lances" on public.lances;
-drop policy if exists "Admins gerenciam lances" on public.lances;
+-- >>> ADMINS <<<
+create policy "Admins podem ver lista de admins"
+on public.admins for select
+to authenticated
+using (true);
 
-create policy "Acesso tabela admins" 
+create policy "Gestão de admins" 
 on public.admins for all 
 using ( auth.uid() = auth_id or public.is_master() );
 
+-- >>> TRANSPORTADORAS <<<
 create policy "Acesso tabela transportadoras" 
 on public.transportadoras for all 
 using ( auth.uid() = auth_id or public.is_admin() );
 
+-- >>> PÁTIOS <<<
 create policy "Todos leem patios" 
 on public.patios for select 
 using ( true );
@@ -131,14 +125,31 @@ create policy "Admins gerenciam patios"
 on public.patios for all 
 using ( public.is_admin() );
 
+-- >>> BIDS <<<
 create policy "Todos leem bids" 
 on public.bids for select 
 using ( true );
 
-create policy "Admins gerenciam bids" 
-on public.bids for all 
-using ( public.is_admin() );
+create policy "Admins criam BIDs"
+on public.bids for insert
+to authenticated
+with check (
+  exists ( select 1 from public.admins where auth_id = auth.uid() )
+);
 
+create policy "Admins editam BIDs"
+on public.bids for update
+to authenticated
+using (
+  exists ( select 1 from public.admins where auth_id = auth.uid() )
+);
+
+create policy "Master deleta BIDs"
+on public.bids for delete
+to authenticated
+using ( public.is_master() );
+
+-- >>> LANCES <<<
 create policy "Todos leem lances" 
 on public.lances for select 
 using ( true );
@@ -158,60 +169,18 @@ insert into storage.buckets (id, name, public)
 values ('veiculos', 'veiculos', true)
 on conflict (id) do nothing;
 
-drop policy if exists "Fotos sao publicas" on storage.objects;
-drop policy if exists "Apenas Admins gerenciam fotos" on storage.objects;
-drop policy if exists "Apenas Admins deletam fotos" on storage.objects;
-
 create policy "Fotos sao publicas"
 on storage.objects for select
 using ( bucket_id = 'veiculos' );
 
-create policy "Apenas Admins gerenciam fotos"
-on storage.objects for insert
-with check ( bucket_id = 'veiculos' and public.is_admin() );
-
-create policy "Apenas Admins deletam fotos"
-on storage.objects for delete
-using ( bucket_id = 'veiculos' and public.is_admin() );
-
--- ==================================================
--- ATUALIZAÇÃO DE SEGURANÇA (RLS) - ADMINS
--- Data: 27/01/2026
--- ==================================================
-
-drop policy if exists "Permitir criar BIDs" on "public"."bids";
-drop policy if exists "Permitir editar BIDs" on "public"."bids";
-drop policy if exists "Permitir upload de imagens" on storage.objects;
-
-create policy "Apenas Admins criam BIDs"
-on "public"."bids"
-for insert
-to authenticated
-with check (
-  exists (
-    select 1 from public.admins 
-    where admins.auth_id = auth.uid()
-  )
-);
-
-create policy "Apenas Admins editam BIDs"
-on "public"."bids"
-for update
-to authenticated
-using (
-  exists (
-    select 1 from public.admins 
-    where admins.auth_id = auth.uid()
-  )
-);
-
-create policy "Apenas Admins sobem fotos"
+create policy "Admins gerenciam fotos"
 on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'veiculos' 
-  and exists (
-    select 1 from public.admins 
-    where admins.auth_id = auth.uid()
-  )
+  and exists ( select 1 from public.admins where auth_id = auth.uid() )
 );
+
+create policy "Admins deletam fotos"
+on storage.objects for delete
+using ( bucket_id = 'veiculos' and public.is_admin() );
