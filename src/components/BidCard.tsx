@@ -279,8 +279,8 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
                                 <div>
-                                <h3 className="text-[10px] font-bold text-gray-400 uppercase">Categoria</h3>
-                                <p className="text-sm font-bold text-gray-900">{bid.categoria_veiculo || '-'}</p>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Categoria</span>
+                                    <p className="text-sm font-bold text-gray-900">{bid.categoria_veiculo || '-'}</p>
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Modelo</span>
