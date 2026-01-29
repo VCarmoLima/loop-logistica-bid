@@ -135,7 +135,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
             transportadora_nome: userName,
             valor: parsedValues.valor,
             prazo_dias: parsedValues.prazo,
-            auth_id: userId // <--- Essa coluna precisa existir no banco!
         })
 
         if (error) throw error
