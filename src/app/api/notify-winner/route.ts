@@ -61,7 +61,8 @@ export async function POST(request: Request) {
         <p style="font-size: 13px;">Aguarde contato operacional.</p>
     `
 
-        const htmlFinal = gerarEmailHtml('🏆 PARABÉNS: Você Venceu!', conteudo, `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`, 'ACESSAR PAINEL')
+        const htmlFinal = gerarEmailHtml('🏆 PARABÉNS: Você Venceu!', conteudo, `${process.env.NEXT_PUBLIC_APP_URL || 'https://logistica-bid.vercel.app'}/`,
+            'ACESSAR PAINEL')
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
