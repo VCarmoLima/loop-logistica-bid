@@ -98,7 +98,9 @@ export default function AdminAnalise({ user }: { user: any }) {
                     bidTitle: bid.titulo,
                     valorFinal: formatCurrency(lanceVencedor.valor)
                 })
-            }).catch(e => console.error("Erro ao notificar vencedor:", e))
+            })
+            .then(res => res.ok ? console.log("✅ E-mail de Vencedor enviado!") : console.error("❌ Erro API Vencedor"))
+            .catch(e => console.error("❌ Erro Rede Vencedor:", e))
         }
 
         alert('Vencedor selecionado! Enviado para aprovação.')
