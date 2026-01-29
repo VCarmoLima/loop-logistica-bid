@@ -278,21 +278,21 @@ export default function NovoBidPage() {
 
                 // 2. Monta o Conteúdo Interno (O recheio do sanduíche)
                 const conteudoEmail = `
-                    <p>Um novo processo de cotação foi aberto e corresponde ao seu perfil.</p>
+                    <p>Um novo BID foi aberto!</p>
                     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                         <p style="margin: 5px 0;"><strong>Veículo:</strong> ${formData.titulo}</p>
                         <p style="margin: 5px 0;"><strong>Rota:</strong> ${formData.origem} ➝ ${formData.destino}</p>
-                        <p style="margin: 5px 0;"><strong>Encerramento:</strong> ${formData.prazo_data.split('-').reverse().join('/')} às ${formData.prazo_hora}</p>
+                        <p style="margin: 5px 0;"><strong>Encerramento do BID:</strong> ${formData.prazo_data.split('-').reverse().join('/')} às ${formData.prazo_hora}</p>
                     </div>
                     <p style="font-size: 13px;">Acesse o painel para visualizar fotos e dar seu lance.</p>
                 `
 
                 // 3. Gera o HTML Final usando o Template Padrão
                 const htmlFinal = gerarEmailHtml(
-                    'Nova Oportunidade Disponível 🚚', 
+                    'Nova Oportunidade Disponível', 
                     conteudoEmail, 
                     `${window.location.origin}/dashboard`, 
-                    'VER DETALHES E COTAR'
+                    'VER DETALHES E DAR LANCE'
                 )
 
                 // 4. Envia via API (Usando BCC para LGPD)
@@ -300,8 +300,8 @@ export default function NovoBidPage() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        to: 'viniciuscarmo.contato@gmail.com', // Envia para você (Admin) para registro
-                        bcc: listaEmails, // Oculto para todas as transportadoras
+                        to: process.env.GMAIL_USER,
+                        bcc: listaEmails,
                         subject: `Nova Cotação: ${formData.titulo}`,
                         html: htmlFinal
                     })
