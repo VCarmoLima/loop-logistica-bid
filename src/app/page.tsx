@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import Cookies from 'js-cookie'
 import { Montserrat } from 'next/font/google'
+import { supabase } from '@/lib/supabase'
 import {
   Eye, EyeOff, Loader2, User, Lock, AlertCircle, CheckCircle, Mail, ArrowLeft, Send
 } from 'lucide-react'
@@ -15,12 +15,6 @@ const logoFont = Montserrat({
   weight: ['600', '800'],
   display: 'swap',
 })
-
-// Inicializando Supabase
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-)
 
 export default function LoginPage() {
   const router = useRouter()
