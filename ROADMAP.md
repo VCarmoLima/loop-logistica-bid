@@ -55,7 +55,7 @@ Implementação do Score dinâmico e refinamento da análise de dados.
 ## 🟠 Experiência do Transportador
 Refinamento da jornada de quem oferta os lances.
 
-- [ ] **Card de BID:**
+- [x] **Card de BID:**
     - [x] Adicionar botão de "Informações Detalhadas" (Imagem inteira do veículo, endereços completos não apenas cidade).
     - [x] Tornar o Card dinâmico: destacar Preço ou Prazo conforme o "Termômetro" definido pelo Admin.
     - [x] Transformar painel responsívo a mobile.
@@ -68,17 +68,18 @@ Refinamento da jornada de quem oferta os lances.
 Automação de alertas seguindo normas de privacidade (LGPD).
 
 - [ ] **Lógica de E-mails para Admins:**
-    - [ ] Boas-vindas para novos usuários (Link + Credenciais).
+    - [x] Boas-vindas para novos usuários (Link + Credenciais).
     - [ ] Logs de atividade: Receber lances e alertas de "15 e 5 minutos para encerrar" dos BIDs criados pelo próprio admin.
     - [ ] Alertas de aprovação para Admins Master.
 - [ ] **Lógica de E-mails para Transportadores:**
-    - [ ] Aviso de novo BID publicado.
-    - [ ] Alerta de "Lance Superado" imediato.
+    - [x] Boas-vindas para novos usuários (Link + Credenciais).
+    - [x] Aviso de novo BID publicado.
+    - [x] Alerta de "Lance Superado" imediato.
     - [ ] Lembrete de inatividade (a cada 10min se o BID estiver aberto e sem lances).
     - [ ] Lembrete de inatividade individual (a cada 10min se o BID estiver aberto mas ele ainda não participou).
-    - [ ] Notificação de Vencedor (com Admins em cópia).
-- [ ] **Privacidade (LGPD):**
-    - [ ] Garantir que transportadores não vejam os e-mails uns dos outros (Uso de Cópia Oculta - CCO ou disparos individuais via script).
+    - [x] Notificação de Vencedor (com Admins em cópia).
+- [x] **Privacidade (LGPD):**
+    - [x] Garantir que transportadores não vejam os e-mails uns dos outros (Uso de Cópia Oculta - CCO ou disparos individuais via script).
 - [ ] **Integração de Canais:**
     - [ ] Criar bot/canal de notificações em tempo real (Telegram ou WhatsApp).
 
