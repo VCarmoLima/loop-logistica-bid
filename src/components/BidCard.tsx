@@ -124,12 +124,41 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
     if (!parsedValues) return;
     setLoading(true)
     try {
+        // --- LÓGICA DE ALERTA DE SUPERADO (NOVO) ---
+        // 1. Descobrir quem é o líder ATUAL (antes do meu lance entrar)
+        // Se houver lances, pegamos o de menor valor
+        const liderAtual = lances.length > 0 
+            ? lances.reduce((prev: any, curr: any) => prev.valor < curr.valor ? prev : curr)
+            : null
+
+        // -------------------------------------------
+
         const { error } = await supabase.from('lances').insert({
             bid_id: bid.id,
             transportadora_nome: userName,
             valor: parsedValues.valor,
-            prazo_dias: parsedValues.prazo
+            prazo_dias: parsedValues.prazo,
+            // O auth_id é inserido automaticamente pelo Supabase via trigger ou default? 
+            // Se sua tabela lances não tem default auth.uid(), precisamos passar:
+            // auth_id: userId 
+            // (Verifique se no seu insert original você passava o ID, se não, o Supabase deve estar pegando do contexto)
         })
+
+        if (error) throw error
+
+        // --- DISPARAR E-MAIL SE HOUVER LÍDER ANTERIOR ---
+        if (liderAtual && liderAtual.transportadora_nome !== userName) {
+            // Não esperamos o e-mail terminar para liberar o usuário (Fire and Forget)
+            fetch('/api/notify-outbid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    oldWinnerAuthId: liderAtual.auth_id, // Precisamos que o select traga o auth_id
+                    bidTitle: bid.titulo,
+                    newPrice: formatCurrency(parsedValues.valor)
+                })
+            }).catch(err => console.error("Falha ao notificar concorrente:", err))
+        }
         if (error) throw error
         alert('Lance enviado com sucesso!')
         setValor('')
