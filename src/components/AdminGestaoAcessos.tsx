@@ -71,9 +71,8 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
 
             if (dbError) throw dbError
 
-            // 3. Enviar E-mail de Boas Vindas (CORRIGIDO)
-            // Agora chama a rota específica que usa o template bonito
-            await fetch('/api/send-welcome', {
+            // 3. Enviar E-mail de Boas Vindas (CORRIGIDO COM TRATAMENTO DE ERRO)
+            const emailResponse = await fetch('/api/send-welcome', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -84,7 +83,16 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
                 })
             })
 
-            alert('Usuário criado com Sucesso e E-mail enviado!')
+            const emailResult = await emailResponse.json()
+
+            if (!emailResponse.ok) {
+                // Se deu erro no envio, avisamos, mas não travamos o cadastro
+                console.error("Erro API Email:", emailResult)
+                alert(`Usuário criado, mas o e-mail falhou: ${emailResult.error}`)
+            } else {
+                alert('Usuário criado com Sucesso e E-mail enviado!')
+            }
+
             setNewName(''); setNewEmail(''); setNewUser(''); setNewPass('')
             fetchUsers()
 
