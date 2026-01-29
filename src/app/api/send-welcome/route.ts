@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const htmlFinal = gerarEmailHtml(
         titulo,
         conteudo,
-        `${process.env.NEXT_PUBLIC_APP_URL || 'https://logistica-bid.vercel.app'}/login`,
+        `${process.env.NEXT_PUBLIC_APP_URL || 'https://logistica-bid.vercel.app'}/`,
         'ACESSAR MINHA CONTA'
     )
 
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     })
 
     await transporter.sendMail({
-        from: `"Sistema BID Logística" <${process.env.GMAIL_USER}>`,
+        from: `"Sistema BID Logístico" <${process.env.GMAIL_USER}>`,
         to: email,
         subject: `Suas credenciais de acesso`,
         html: htmlFinal

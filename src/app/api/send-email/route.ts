@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     })
 
     await transporter.sendMail({
-      from: `"Sistema BID Logística" <${user}>`,
+      from: `"Sistema BID Logístico" <${user}>`,
       to: to,      
       bcc: bcc,   
       subject: subject,

@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     })
 
     await transporter.sendMail({
-        from: `"Sistema BID Logística" <${process.env.GMAIL_USER}>`,
+        from: `"Sistema BID Logístico" <${process.env.GMAIL_USER}>`,
         to: userData.email,
         cc: process.env.LOOP_USER,
         subject: `🏆 BID Vencido: ${bidTitle}`,
