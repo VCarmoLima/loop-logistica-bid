@@ -138,6 +138,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
             transportadora_nome: userName,
             valor: parsedValues.valor,
             prazo_dias: parsedValues.prazo,
+            auth_id: userId
             // O auth_id é inserido automaticamente pelo Supabase via trigger ou default? 
             // Se sua tabela lances não tem default auth.uid(), precisamos passar:
             // auth_id: userId 
