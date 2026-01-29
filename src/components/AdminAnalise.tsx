@@ -82,26 +82,6 @@ export default function AdminAnalise({ user }: { user: any }) {
             .eq('id', bidId)
 
         if (error) throw error
-        const { data: bid } = await supabase
-            .from('bids')
-            .select('*, lances!lances_bid_id_fkey(*)')
-            .eq('id', bidId)
-            .single()
-        const lanceVencedor = bid.lances.find((l:any) => l.id === vencedorId)
-        
-        if (lanceVencedor) {
-            fetch('/api/notify-winner', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    winnerLanceId: vencedorId,
-                    bidTitle: bid.titulo,
-                    valorFinal: formatCurrency(lanceVencedor.valor)
-                })
-            })
-            .then(res => res.ok ? console.log("✅ E-mail de Vencedor enviado!") : console.error("❌ Erro API Vencedor"))
-            .catch(e => console.error("❌ Erro Rede Vencedor:", e))
-        }
 
         alert('Vencedor selecionado! Enviado para aprovação.')
         fetchBidsAnalise()
