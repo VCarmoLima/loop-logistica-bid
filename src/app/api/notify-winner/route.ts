@@ -8,17 +8,12 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { winnerLanceId, bidTitle, valorFinal } = body
 
-    // --- LOGS DE DEBUG (APARECEM NO PAINEL DA VERCEL) ---
+    // Logs de Debug
     console.log("1. Iniciando envio de Vencedor...")
-    console.log("2. Dados recebidos:", { winnerLanceId, bidTitle, valorFinal })
-    console.log("3. Verificando Chaves:", {
-        url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-        serviceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY, // Tem que ser TRUE
-        gmailUser: !!process.env.GMAIL_USER
-    })
+    console.log("2. Dados:", { winnerLanceId, bidTitle, valorFinal })
 
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-        throw new Error("FATAL: SUPABASE_SERVICE_ROLE_KEY não carregada. Faça Redeploy na Vercel.")
+        throw new Error("FATAL: SUPABASE_SERVICE_ROLE_KEY não carregada.")
     }
 
     const supabaseAdmin = createClient(
@@ -26,7 +21,7 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Busca Lance
+    // 1. Busca dados do Lance
     const { data: lanceData, error: lanceError } = await supabaseAdmin
         .from('lances')
         .select('auth_id, transportadora_nome')
@@ -34,12 +29,21 @@ export async function POST(request: Request) {
         .single()
 
     if (lanceError || !lanceData) {
-        console.error("4. Erro ao buscar Lance:", lanceError)
-        return NextResponse.json({ message: 'Lance não encontrado no Banco', detalhe: lanceError }, { status: 404 })
+        console.error("Erro ao buscar lance:", lanceError)
+        return NextResponse.json({ message: 'Lance não encontrado' }, { status: 404 })
     }
-    console.log("4. Lance encontrado:", lanceData.transportadora_nome)
 
-    // Busca Usuário
+    // --- CORREÇÃO AQUI: VERIFICAÇÃO DE LANCE ANTIGO ---
+    // Se o auth_id for nulo (lance criado antes da atualização), paramos aqui sem erro.
+    if (!lanceData.auth_id) {
+        console.log("⚠️ Lance antigo detectado (sem auth_id). O e-mail não será enviado, mas o fluxo segue.")
+        return NextResponse.json({ message: 'Lance antigo sem vínculo de usuário. E-mail ignorado.' })
+    }
+    // --------------------------------------------------
+
+    console.log("3. Lance válido. Buscando email do ID:", lanceData.auth_id)
+
+    // 2. Busca e-mail da Transportadora
     const { data: userData, error: userError } = await supabaseAdmin
         .from('transportadoras')
         .select('email, nome')
@@ -47,12 +51,13 @@ export async function POST(request: Request) {
         .single()
 
     if (userError || !userData) {
-        console.error("5. Erro ao buscar Transportadora:", userError)
-        return NextResponse.json({ message: 'Transportadora não encontrada', detalhe: userError }, { status: 404 })
+        console.error("Erro ao buscar Transportadora:", userError)
+        return NextResponse.json({ message: 'Transportadora não encontrada' }, { status: 404 })
     }
-    console.log("5. Email encontrado:", userData.email)
 
-    // Envio de Email
+    console.log("4. Destinatário encontrado:", userData.email)
+
+    // 3. Envio de Email
     const conteudo = `
         <p>Parabéns, <strong>${userData.nome}</strong>!</p>
         <p>Sua proposta foi a escolhida e <strong>HOMOLOGADA</strong> pelo nosso time.</p>
@@ -80,7 +85,7 @@ export async function POST(request: Request) {
         html: htmlFinal
     })
 
-    console.log("6. Sucesso total!")
+    console.log("✅ E-mail enviado com sucesso!")
     return NextResponse.json({ message: 'Vencedor notificado com sucesso!' })
 
   } catch (error: any) {
