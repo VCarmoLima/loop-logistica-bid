@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { gerarEmailHtml } from '@/lib/email-template'
 
+
 // Inicializa Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -300,7 +301,7 @@ export default function NovoBidPage() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        to: process.env.GMAIL_USER,
+                        to: process.env.LOOP_USER,
                         bcc: listaEmails,
                         subject: `Nova Cotação: ${formData.titulo}`,
                         html: htmlFinal
