@@ -48,11 +48,14 @@ export default function AdminAprovacao({ user }: { user: any }) {
         }).sort((a, b) => b.score - a.score)
     }
 
+    // src/components/AdminAprovacao.tsx
+
     const handleAprovar = async (bidId: string) => {
         if (!confirm('CONFIRMAÇÃO MASTER: Deseja finalizar este processo?')) return
 
         setProcessingId(bidId)
         try {
+            // 1. Atualiza status no banco
             const { error } = await supabase
                 .from('bids')
                 .update({
@@ -62,7 +65,34 @@ export default function AdminAprovacao({ user }: { user: any }) {
                 .eq('id', bidId)
 
             if (error) throw error
-            alert('BID Finalizado com Sucesso!')
+
+            // 2. DISPARO DE E-MAIL (Nova Lógica Correta)
+            // Buscamos o BID na lista atual da tela para pegar os dados sem ir no banco de novo
+            const bidAtual = bids.find(b => b.id === bidId)
+            
+            if (bidAtual && bidAtual.lance_vencedor_id) {
+                // Encontra o lance vencedor dentro do array de lances do BID
+                const lanceVencedor = bidAtual.lances.find((l: any) => l.id === bidAtual.lance_vencedor_id)
+
+                if (lanceVencedor) {
+                    fetch('/api/notify-winner', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            winnerLanceId: bidAtual.lance_vencedor_id,
+                            bidTitle: bidAtual.titulo,
+                            valorFinal: formatCurrency(lanceVencedor.valor)
+                        })
+                    })
+                    .then(res => {
+                        if (res.ok) console.log("✅ Email de vitória enviado.")
+                        else console.error("❌ Falha no envio do email.")
+                    })
+                    .catch(err => console.error("❌ Erro de rede no email:", err))
+                }
+            }
+
+            alert('BID Finalizado com Sucesso e Vencedor Notificado!')
             fetchBidsAprovacao()
         } catch (err) {
             console.error(err)
