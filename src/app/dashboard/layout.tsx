@@ -10,14 +10,11 @@ import {
   Truck, ShieldCheck, History, UserCircle, Pin, PinOff, Menu, X
 } from 'lucide-react'
 
-// CONFIGURANDO A FONTE DO LOGO
 const logoFont = Montserrat({
   subsets: ['latin'],
   weight: ['600', '800'],
   display: 'swap',
 })
-
-// --- HELPER CLASSES ---
 
 const getMenuTextClass = (isOpen: boolean) => {
   return `transition-all ease-in-out whitespace-nowrap overflow-hidden
@@ -80,7 +77,7 @@ const NavLink = ({ href, icon: Icon, label, isOpen, isActive, isSpecial = false,
   return (
     <Link
       href={href}
-      onClick={onClick} // Fecha o menu mobile ao clicar
+      onClick={onClick}
       className={`group flex items-center py-2.5 rounded-lg text-sm font-medium transition-all duration-300
         ${isOpen ? 'px-3' : 'pl-[26px] pr-0'} 
         ${isSpecial
@@ -102,28 +99,19 @@ const NavLink = ({ href, icon: Icon, label, isOpen, isActive, isSpecial = false,
   )
 }
 
-// --- COMPONENTE PRINCIPAL ---
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
 
-  // ESTADOS
   const [isPinned, setIsPinned] = useState(true)
   const [isHovered, setIsHovered] = useState(false)
-  const [isMobileOpen, setIsMobileOpen] = useState(false) // Novo estado para Mobile
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
   const [logoError, setLogoError] = useState(false)
   const [iconError, setIconError] = useState(false)
 
-  // Lógica de "Aberto": 
-  // No Desktop: Pin ou Hover.
-  // No Mobile: Apenas se o menu mobile estiver ativado.
   const isDesktopOpen = isPinned || isHovered
-
-  // O "isOpen" visual para os componentes internos (Links, Textos):
-  // Se estiver no mobile e aberto -> TRUE. Se estiver no desktop e (pin ou hover) -> TRUE.
   const isOpen = isMobileOpen || isDesktopOpen
 
   useEffect(() => {
@@ -145,9 +133,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isAdmin = user.type === 'admin'
   const isMaster = user.role === 'master'
 
-  // SIDEBAR CSS RESPONSIVO
-  // Mobile: w-64 fixo, transform controla visibilidade (-translate-x-full = escondido)
-  // Desktop (md:): width variável (w-20 ou w-64), transform sempre zerado
   const sidebarClass = `fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col shadow-2xl md:shadow-sm
     transition-all duration-300 ease-in-out
     w-64 transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
@@ -155,7 +140,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ${isDesktopOpen ? 'md:w-64' : 'md:w-20'}
   `
 
-  // STAGGER DELAY
   let delayCounter = 100
   const step = 25
   const getDelay = () => {
@@ -167,7 +151,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
 
-      {/* --- MOBILE OVERLAY (Fundo escuro quando menu abre) --- */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 backdrop-blur-sm md:hidden transition-opacity duration-300"
@@ -175,7 +158,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-      {/* --- HEADER MOBILE (Aparece só no celular) --- */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-20 flex items-center justify-between px-4 shadow-sm">
         <button
           onClick={() => setIsMobileOpen(true)}
@@ -184,7 +166,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Menu size={24} />
         </button>
 
-        {/* Logo Mobile Centralizado */}
         <div className="flex items-center gap-2">
           <div className={`flex items-baseline justify-center leading-none ${logoFont.className}`}>
             <span className="text-xl font-extrabold text-gray-800 tracking-tight">BID</span>
@@ -192,23 +173,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* Espaço vazio para equilibrar o layout ou avatar user */}
         <div className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center text-red-700 font-bold text-xs border border-red-100">
           {user.nome.charAt(0).toUpperCase()}
         </div>
       </div>
-
-      {/* --- SIDEBAR --- */}
       <aside
         className={sidebarClass}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
 
-        {/* 1. Header Sidebar */}
         <div className="h-24 w-full relative border-b border-gray-100 bg-white z-20 overflow-hidden select-none flex-shrink-0">
 
-          {/* Botão FECHAR no Mobile (X) */}
           <div className="md:hidden absolute right-2 top-2 z-50">
             <button
               onClick={() => setIsMobileOpen(false)}
@@ -218,7 +194,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
 
-          {/* A. ESTADO ABERTO */}
           <div className={getHeaderOpenClass(isOpen)}>
             {!logoError ? (
               <>
@@ -248,7 +223,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
 
-          {/* B. ESTADO FECHADO (Só desktop) */}
           <div className={`${getHeaderIconClass(isOpen)} md:flex hidden`}>
             {!iconError ? (
               <img
@@ -265,7 +239,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
 
-          {/* Botão PIN (Só Desktop) */}
           <div className={`hidden md:block absolute right-2 top-2 transition-all duration-300 ${isOpen ? 'opacity-100 delay-200' : 'opacity-0 pointer-events-none'}`}>
             <button
               onClick={() => setIsPinned(!isPinned)}
@@ -277,14 +250,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* 2. User Info */}
         <div className="h-20 border-b border-gray-50 transition-all duration-500 flex flex-col items-center justify-center relative overflow-hidden flex-shrink-0">
           <div className={getUserOpenClass(isOpen)}>
             <div className="text-center w-full px-2">
               <p className="text-sm font-bold text-gray-900 truncate" title={user.nome}>{user.nome}</p>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5 flex items-center justify-center gap-1">
                 {isAdmin ? (isMaster ? 'Master Admin' : 'Analista') : 'Transportadora'}
-                {isMaster //&& <ShieldCheck size={12} className="text-red-900" />   
+                {isMaster
                 }
               </p>
             </div>
@@ -297,7 +269,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* 3. Navegação */}
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-100 select-none">
           <SectionTitle label="Operacional" isOpen={isOpen} delayMs={getDelay()} isFirst={true} />
 
@@ -346,7 +317,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </nav>
 
-        {/* 4. Footer */}
         <div className="p-4 border-t border-gray-100 bg-gray-50/30 select-none flex-shrink-0">
           <NavLink
             href="/dashboard/minha-conta"
@@ -376,7 +346,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* --- CONTEÚDO PRINCIPAL --- */}
       <main
         className={`flex-1 transition-all duration-700 cubic-bezier(0.25, 0.8, 0.25, 1)
             pt-20 p-4 md:p-8 md:pt-8 

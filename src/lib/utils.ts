@@ -1,12 +1,10 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-// Função para combinar classes Tailwind condicionalmente
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Formatador de Moeda (BRL)
 export const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -14,7 +12,6 @@ export const formatCurrency = (value: number) => {
   }).format(value)
 }
 
-// Formatador de Data (DD/MM/YYYY HH:mm)
 export const formatDate = (dateString: string | null) => {
   if (!dateString) return 'Data indefinida'
   const date = new Date(dateString)

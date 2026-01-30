@@ -14,7 +14,6 @@ export default function TransporterHistorico({ user }: { user: any }) {
   }, [])
 
   const fetchHistorico = async () => {
-    // Busca lances feitos por esta transportadora
     const { data: lances } = await supabase
       .from('lances')
       .select('bid_id')
@@ -25,13 +24,11 @@ export default function TransporterHistorico({ user }: { user: any }) {
       return
     }
 
-    // Extrai IDs únicos dos BIDs
     const bidIds = Array.from(new Set(lances.map(l => l.bid_id)))
 
-    // Busca os detalhes desses BIDs que já finalizaram
     const { data: bidsData } = await supabase
       .from('bids')
-      .select('*, lances!lances_bid_id_fkey(*)') // Precisamos dos lances para ver quem ganhou
+      .select('*, lances!lances_bid_id_fkey(*)')
       .in('id', bidIds)
       .eq('status', 'FINALIZADO')
       .order('created_at', { ascending: false })
@@ -58,7 +55,6 @@ export default function TransporterHistorico({ user }: { user: any }) {
       ) : (
         <div className="space-y-4">
           {bids.map((bid) => {
-            // Lógica de Resultado
             const vencedorLance = bid.lances.find((l: any) => l.id === bid.lance_vencedor_id)
             const euGanhei = vencedorLance?.transportadora_nome === user.nome
             const meuMelhorLance = bid.lances

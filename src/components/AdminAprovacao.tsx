@@ -43,14 +43,11 @@ export default function AdminAprovacao({ user }: { user: any }) {
         }).sort((a, b) => b.score - a.score)
     }
 
-    // src/components/AdminAprovacao.tsx
-
     const handleAprovar = async (bidId: string) => {
         if (!confirm('CONFIRMAÇÃO MASTER: Deseja finalizar este processo?')) return
 
         setProcessingId(bidId)
         try {
-            // 1. Atualiza status no banco
             const { error } = await supabase
                 .from('bids')
                 .update({
@@ -61,12 +58,9 @@ export default function AdminAprovacao({ user }: { user: any }) {
 
             if (error) throw error
 
-            // 2. DISPARO DE E-MAIL (Nova Lógica Correta)
-            // Buscamos o BID na lista atual da tela para pegar os dados sem ir no banco de novo
             const bidAtual = bids.find(b => b.id === bidId)
-            
+
             if (bidAtual && bidAtual.lance_vencedor_id) {
-                // Encontra o lance vencedor dentro do array de lances do BID
                 const lanceVencedor = bidAtual.lances.find((l: any) => l.id === bidAtual.lance_vencedor_id)
 
                 if (lanceVencedor) {
@@ -79,11 +73,11 @@ export default function AdminAprovacao({ user }: { user: any }) {
                             valorFinal: formatCurrency(lanceVencedor.valor)
                         })
                     })
-                    .then(res => {
-                        if (res.ok) console.log("✅ Email de vitória enviado.")
-                        else console.error("❌ Falha no envio do email.")
-                    })
-                    .catch(err => console.error("❌ Erro de rede no email:", err))
+                        .then(res => {
+                            if (res.ok) console.log("✅ Email de vitória enviado.")
+                            else console.error("❌ Falha no envio do email.")
+                        })
+                        .catch(err => console.error("❌ Erro de rede no email:", err))
                 }
             }
 
@@ -191,7 +185,6 @@ export default function AdminAprovacao({ user }: { user: any }) {
                                         <h5 className="text-xs font-bold text-gray-400 uppercase mb-3">Dados de Comparação do Mercado</h5>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                                            {/* Melhor Preço - Verde */}
                                             <div className="bg-white p-3 rounded border border-gray-200">
                                                 <div className="text-xs font-bold text-green-700 mb-1 flex items-center gap-1"><DollarSign size={12} /> Melhor Preço</div>
                                                 <div className="text-sm font-bold text-gray-900">
@@ -202,7 +195,6 @@ export default function AdminAprovacao({ user }: { user: any }) {
                                                 </div>
                                             </div>
 
-                                            {/* Melhor Prazo - Verde */}
                                             <div className="bg-white p-3 rounded border border-gray-200">
                                                 <div className="text-xs font-bold text-green-700 mb-1 flex items-center gap-1"><Clock size={12} /> Melhor Prazo</div>
                                                 <div className="text-sm font-bold text-gray-900">
@@ -213,7 +205,6 @@ export default function AdminAprovacao({ user }: { user: any }) {
                                                 </div>
                                             </div>
 
-                                            {/* Melhor Score - Preto */}
                                             <div className="bg-white p-3 rounded border border-gray-200">
                                                 <div className="text-xs font-bold text-gray-500 mb-1 flex items-center gap-1"><Trophy size={12} /> Melhor Score</div>
                                                 <div className="text-sm font-bold text-gray-900">

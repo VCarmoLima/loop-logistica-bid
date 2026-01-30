@@ -10,7 +10,6 @@ export default function AdminDashboard({ user }: { user: any }) {
     const [loading, setLoading] = useState(true)
     const [processingId, setProcessingId] = useState<string | null>(null)
 
-    // LÓGICA ORIGINAL RESTAURADA
     useEffect(() => {
         fetchActiveBids()
         const interval = setInterval(fetchActiveBids, 10000)
@@ -63,7 +62,7 @@ export default function AdminDashboard({ user }: { user: any }) {
     if (loading) return <div className="p-8 text-center text-gray-500 font-medium">Carregando painel de monitoramento...</div>
 
     return (
-        <div className="pb-20 md:pb-0"> {/* Espaço extra no mobile para não colar no fundo */}
+        <div className="pb-20 md:pb-0">
 
             <div className="mb-6 md:mb-8">
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900">Painel de Monitoramento</h1>
@@ -92,11 +91,9 @@ export default function AdminDashboard({ user }: { user: any }) {
                             <div key={bid.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                                 <div className="p-4 md:p-6">
 
-                                    {/* RESPONSIVIDADE: flex-col no mobile, flex-row no desktop */}
                                     <div className="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
 
                                         <div className="flex gap-4 w-full md:w-auto">
-                                            {/* Imagem */}
                                             <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                                                 {bid.imagem_url ? (
                                                     <img src={bid.imagem_url} alt="Veículo" className="w-full h-full object-cover" />
@@ -105,7 +102,6 @@ export default function AdminDashboard({ user }: { user: any }) {
                                                 )}
                                             </div>
 
-                                            {/* Informações Principais */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex flex-wrap items-center gap-2 mb-1">
                                                     <span className="bg-red-50 text-red-700 border border-red-100 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded uppercase">
@@ -127,7 +123,6 @@ export default function AdminDashboard({ user }: { user: any }) {
                                             </div>
                                         </div>
 
-                                        {/* Botão de Ação: Full width no mobile */}
                                         <button
                                             onClick={() => handleEncerrar(bid.id)}
                                             disabled={processingId === bid.id}
@@ -137,7 +132,6 @@ export default function AdminDashboard({ user }: { user: any }) {
                                         </button>
                                     </div>
 
-                                    {/* Grid de Métricas (Já é responsivo nativamente, só ajustei o gap) */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-100">
                                         <div className="flex md:block justify-between items-center">
                                             <p className="text-xs font-bold text-gray-400 uppercase mb-0 md:mb-1">Lances</p>

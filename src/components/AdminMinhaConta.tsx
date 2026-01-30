@@ -36,7 +36,6 @@ export default function AdminMinhaConta({ user }: { user: any }) {
             alert('Erro ao atualizar: ' + error.message)
         } else {
             alert('Perfil atualizado com sucesso! Faça login novamente para ver as alterações.')
-            // Atualiza cookie localmente se mudou apenas email, mas ideal é relogar
             const newUser = { ...user, email }
             Cookies.set('bid_session', JSON.stringify(newUser))
         }

@@ -1,5 +1,3 @@
-// src/lib/email-template.ts
-
 export const gerarEmailHtml = (titulo: string, mensagemHtml: string, botaoLink?: string, botaoTexto?: string) => {
   return `
 <!DOCTYPE html>

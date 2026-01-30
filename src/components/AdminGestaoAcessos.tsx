@@ -9,7 +9,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
     const [usersList, setUsersList] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
-    // Form States
     const [newName, setNewName] = useState('')
     const [newEmail, setNewEmail] = useState('')
     const [newUser, setNewUser] = useState('')
@@ -43,7 +42,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
         setLoading(true)
 
         try {
-            // 1. Criar Usuário no Supabase Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: newEmail,
                 password: newPass,
@@ -52,7 +50,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
             if (authError) throw authError
             if (!authData.user) throw new Error("Erro ao gerar ID de autenticação")
 
-            // 2. Criar o Perfil no Banco
             const table = activeTab === 'admins' ? 'admins' : 'transportadoras'
             const payload: any = {
                 auth_id: authData.user.id,
@@ -66,7 +63,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
 
             if (dbError) throw dbError
 
-            // 3. Enviar E-mail de Boas Vindas (CORRIGIDO COM TRATAMENTO DE ERRO)
             const emailResponse = await fetch('/api/send-welcome', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -81,7 +77,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
             const emailResult = await emailResponse.json()
 
             if (!emailResponse.ok) {
-                // Se deu erro no envio, avisamos, mas não travamos o cadastro
                 console.error("Erro API Email:", emailResult)
                 alert(`Usuário criado, mas o e-mail falhou: ${emailResult.error}`)
             } else {
@@ -106,7 +101,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
         fetchUsers()
     }
 
-    // Apenas Master pode ver Admins
     const isMaster = user.role === 'master'
 
     return (
@@ -116,7 +110,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
                 <p className="text-gray-500 text-sm">Gerencie quem pode acessar o sistema.</p>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-4 border-b border-gray-200 mb-6">
                 <button
                     onClick={() => setActiveTab('transportadoras')}
@@ -134,7 +127,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
                 )}
             </div>
 
-            {/* Formulário de Criação */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 uppercase mb-4">Adicionar Novo {activeTab === 'admins' ? 'Admin' : 'Parceiro'}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -192,7 +184,6 @@ export default function AdminGestaoAcessos({ user }: { user: any }) {
                 </div>
             </div>
 
-            {/* Lista */}
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 text-gray-500 font-bold border-b border-gray-200">

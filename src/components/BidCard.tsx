@@ -20,12 +20,10 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
     const [valor, setValor] = useState<string>('')
     const [prazo, setPrazo] = useState<string>('')
 
-    // MODAIS
     const [showDetails, setShowDetails] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
     const [parsedValues, setParsedValues] = useState<{ valor: number, prazo: number } | null>(null)
 
-    // 1. Lógica de Lances
     const lances = bid.lances || []
     const meusLances = lances.filter((l: any) => l.transportadora_nome === userName)
 
@@ -38,8 +36,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
 
     const isLider = meuMelhorLance && melhorPreco && meuMelhorLance.valor === melhorPreco
     const isSuperado = meuMelhorLance && melhorPreco && meuMelhorLance.valor > melhorPreco
-
-    // 2. Helpers de Exibição
 
     const getCityFromAddress = (address: string) => {
         if (!address) return '---';
@@ -65,13 +61,9 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
         }
     }
 
-    // --- LÓGICA DE ESTRATÉGIA (TERMÔMETRO) ---
-    const pesoPreco = bid.peso_preco || 70 // Padrão 70 se não vier do banco
-
-    // Define o tipo de estratégia
+    const pesoPreco = bid.peso_preco || 70
     const strategyType = pesoPreco >= 60 ? 'price' : pesoPreco <= 40 ? 'deadline' : 'balanced'
 
-    // Configuração Visual baseada na estratégia
     const strategyConfig = {
         price: {
             label: 'Foco: MENOR PREÇO',
@@ -119,13 +111,10 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
         if (!parsedValues) return;
         setLoading(true)
         try {
-            // 1. Identifica o Líder ATUAL (antes do seu lance entrar)
-            // Isso descobre quem está ganhando AGORA, para podermos avisá-lo que ele vai perder.
             const liderAtual = lances.length > 0
                 ? lances.reduce((prev: any, curr: any) => prev.valor < curr.valor ? prev : curr)
                 : null
 
-            // 2. Insere o Lance (Sem passar auth_id manualmente, o banco resolve)
             const { error } = await supabase.from('lances').insert({
                 bid_id: bid.id,
                 transportadora_nome: userName,
@@ -135,11 +124,7 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
 
             if (error) throw error
 
-            // 3. Lógica de Disparo de E-mail (Lance Superado)
-            // Só entra aqui se existia um líder e se esse líder NÃO sou eu mesmo
             if (liderAtual && liderAtual.transportadora_nome !== userName) {
-
-                // Verifica se o meu lance novo é realmente melhor (menor preço)
                 if (parsedValues.valor < liderAtual.valor) {
                     console.log("Superando lance de:", liderAtual.transportadora_nome, "ID:", liderAtual.auth_id)
 
@@ -175,7 +160,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
 
     return (
         <>
-            {/* --- CARD PRINCIPAL (RESUMIDO) --- */}
             <div className={`bg-white border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md flex flex-col h-full ${isLider ? 'border-green-500 ring-2 ring-green-500' : 'border-gray-200'}`}>
 
                 <div className="relative h-36 bg-gray-100 flex-shrink-0 group cursor-pointer" onClick={() => setShowDetails(true)}>
@@ -217,7 +201,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                         <p className="text-xs text-gray-500 line-clamp-1">{bid.modelo || bid.categoria_veiculo} • {bid.tipo_transporte}</p>
                     </div>
 
-                    {/* Rota */}
                     <div
                         className="flex items-center gap-2 text-xs text-gray-600 mb-3 bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors group"
                         onClick={() => setShowDetails(true)}
@@ -231,21 +214,16 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                         </div>
                     </div>
 
-                    {/* --- NOVO: INDICADOR DE ESTRATÉGIA --- */}
                     <div className={`mb-3 flex items-center justify-center gap-2 py-1.5 px-2 rounded border text-[10px] font-bold uppercase tracking-wide ${currentStrategy.colorClass}`}>
                         <Target size={12} /> {currentStrategy.label}
                     </div>
-
-                    {/* Métricas de Mercado (DINÂMICAS) */}
                     <div className="grid grid-cols-2 gap-2 mb-4 mt-auto">
-                        {/* Box Preço: Ganha destaque se for 'price' */}
                         <div className={`p-2 rounded border text-center transition-colors ${currentStrategy.priceBoxClass}`}>
                             <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Melhor Preço</p>
                             <p className={`text-sm font-extrabold ${strategyType === 'price' ? 'text-green-700' : 'text-gray-900'}`}>
                                 {melhorPreco ? formatCurrency(melhorPreco) : '---'}
                             </p>
                         </div>
-                        {/* Box Prazo: Ganha destaque se for 'deadline' */}
                         <div className={`p-2 rounded border text-center transition-colors ${currentStrategy.deadlineBoxClass}`}>
                             <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Melhor Prazo</p>
                             <p className={`text-sm font-extrabold ${strategyType === 'deadline' ? 'text-green-700' : 'text-gray-900'}`}>
@@ -254,7 +232,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                         </div>
                     </div>
 
-                    {/* Área de Lance */}
                     <div className="space-y-3 pt-3 border-t border-gray-100">
                         {melhorPreco && !isLider && (
                             <button
@@ -302,12 +279,10 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                 </div>
             </div>
 
-            {/* --- MODAL DETALHADO --- */}
             {showDetails && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl overflow-y-auto flex flex-col">
 
-                        {/* Header Modal */}
                         <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
                             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                                 <Truck className="text-red-600" /> Detalhes do BID
@@ -318,7 +293,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                         </div>
 
                         <div className="p-6 space-y-6">
-                            {/* Imagem Grande */}
                             <div className="w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
                                 {bid.imagem_url ? (
                                     <img src={bid.imagem_url} alt="Veículo" className="w-full h-auto max-h-[300px] object-contain mx-auto" />
@@ -331,7 +305,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                                 </div>
                             </div>
 
-                            {/* Ficha Técnica */}
                             <div>
                                 <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                                     <Tag size={16} className="text-red-600" /> Especificações do Veículo
@@ -358,7 +331,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                                 </div>
                             </div>
 
-                            {/* Endereços COMPLETOS */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <h3 className="text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-1">
@@ -404,7 +376,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                 </div>
             )}
 
-            {/* --- MODAL CONFIRMAÇÃO --- */}
             {showConfirm && parsedValues && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in zoom-in-95 duration-200">
                     <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden">
@@ -431,7 +402,6 @@ export default function BidCard({ bid, userId, userName, onUpdate }: BidCardProp
                                 </p>
                             </div>
 
-                            {/* Alerta de Competitividade */}
                             {melhorPreco && parsedValues.valor >= melhorPreco && (
                                 <div className="bg-red-50 p-3 rounded-lg text-xs text-red-700 text-left border border-red-100 flex gap-2">
                                     <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />

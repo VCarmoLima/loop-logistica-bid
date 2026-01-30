@@ -9,7 +9,6 @@ import {
   Eye, EyeOff, Loader2, User, Lock, AlertCircle, CheckCircle, Mail, ArrowLeft, Send
 } from 'lucide-react'
 
-// CONFIGURANDO A FONTE DO LOGO
 const logoFont = Montserrat({
   subsets: ['latin'],
   weight: ['600', '800'],
@@ -19,20 +18,15 @@ const logoFont = Montserrat({
 export default function LoginPage() {
   const router = useRouter()
 
-  // ESTADOS
   const [view, setView] = useState<'login' | 'forgot'>('login')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-
-  // FORMULÁRIO
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
-  // ESTADO DO LOGO
   const [logoError, setLogoError] = useState(false)
 
-  // --- LOGIN ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -49,7 +43,6 @@ export default function LoginPage() {
 
       const userId = authData.user.id
 
-      // Verifica ADMIN
       const { data: adminUser } = await supabase
         .from('admins')
         .select('*')
@@ -67,7 +60,6 @@ export default function LoginPage() {
         return
       }
 
-      // Verifica TRANSPORTADORA
       const { data: providerUser } = await supabase
         .from('transportadoras')
         .select('*')
@@ -94,7 +86,6 @@ export default function LoginPage() {
     }
   }
 
-  // --- RECUPERAÇÃO ---
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -107,7 +98,6 @@ export default function LoginPage() {
 
       if (error) throw error
 
-      // SUCESSO: Define a mensagem (que ativará a Tela de Sucesso no render)
       setMessage({ type: 'success', text: 'Link enviado com sucesso!' })
 
     } catch (err: any) {
@@ -121,13 +111,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
 
-        {/* Barra de Topo */}
         <div className="h-2 w-full bg-gradient-to-r from-red-600 to-red-800" />
 
         <div className="p-8">
 
-          {/* CABEÇALHO / LOGO */}
-          {/* Só mostramos o logo se NÃO estiver na tela de sucesso (para ficar mais limpo) ou mantemos se preferir */}
           <div className="flex flex-col items-center justify-center mb-8 select-none">
             {!logoError ? (
               <>
@@ -157,8 +144,6 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* ÁREA DE FEEDBACK (Apenas Erros) */}
-          {/* Se for sucesso na recuperação, ocultamos aqui pois mostraremos a tela dedicada */}
           {message && message.type === 'error' && (
             <div className="mb-6 p-3 rounded-md flex items-center gap-2 text-sm border bg-red-50 text-red-600 border-red-100 animate-in fade-in slide-in-from-top-2">
               <AlertCircle size={18} />
@@ -166,10 +151,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* LÓGICA DE NAVEGAÇÃO ENTRE TELAS */}
-
           {view === 'login' ? (
-            /* --- TELA 1: LOGIN --- */
             <form onSubmit={handleLogin} className="space-y-5 animate-in fade-in slide-in-from-left-4">
 
               <div>
@@ -231,9 +213,6 @@ export default function LoginPage() {
             </form>
 
           ) : (
-            /* --- FLUXO DE RECUPERAÇÃO --- */
-
-            // SE TIVER SUCESSO, MOSTRA TELA DE "EMAIL ENVIADO"
             message?.type === 'success' ? (
               <div className="text-center animate-in zoom-in-95 duration-300">
                 <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4 text-green-600">
@@ -253,7 +232,6 @@ export default function LoginPage() {
                 </button>
               </div>
             ) : (
-              // SE NÃO TIVER SUCESSO AINDA, MOSTRA O FORMULÁRIO
               <form onSubmit={handleResetPassword} className="space-y-5 animate-in fade-in slide-in-from-right-4">
                 <div className="text-center mb-4">
                   <h3 className="text-lg font-bold text-gray-900">Recuperar Acesso</h3>
@@ -299,7 +277,6 @@ export default function LoginPage() {
             )
           )}
 
-          {/* RODAPÉ */}
           <div className="mt-8 text-center border-t border-gray-100 pt-4">
             <p className="text-xs text-gray-400">
               © {new Date().getFullYear()} VCarmoLima — Todos os direitos reservados.

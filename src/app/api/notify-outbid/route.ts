@@ -7,12 +7,10 @@ export async function POST(request: Request) {
   try {
     const { oldWinnerAuthId, bidTitle, newPrice } = await request.json()
 
-    // Validação básica
     if (!oldWinnerAuthId) {
       return NextResponse.json({ message: 'ID do usuário anterior não fornecido.' }, { status: 400 })
     }
 
-    // 2. Busca dados da transportadora superada (busca pelo auth_id)
     const { data: userData, error } = await supabase
       .from('transportadoras')
       .select('email, nome')
@@ -24,7 +22,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Transportadora não encontrada.' }, { status: 404 })
     }
 
-    // 3. Monta o Conteúdo Visual
     const conteudo = `
         <p>Olá, <strong>${userData.nome}</strong>.</p>
         <p>Outra transportadora acabou de enviar uma oferta mais competitiva para a carga abaixo:</p>
@@ -40,7 +37,6 @@ export async function POST(request: Request) {
         <p style="font-size: 13px;">Se você não cobrir este lance agora, perderá a oportunidade.</p>
     `
 
-    // 4. Gera HTML Final
     const htmlFinal = gerarEmailHtml(
       '⚠️ Atenção: Você foi superado!',
       conteudo,
@@ -48,13 +44,10 @@ export async function POST(request: Request) {
       'COBRIR OFERTA AGORA'
     )
 
-    // 5. Configura Envio
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
     })
-
-    // 6. Envia
     await transporter.sendMail({
       from: `"Sistema BID Logístico" <${process.env.GMAIL_USER}>`,
       to: userData.email,

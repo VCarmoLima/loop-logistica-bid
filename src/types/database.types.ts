@@ -15,7 +15,7 @@ export interface Database {
           nome: string
           usuario: string
           email: string | null
-          senha: string // Nota: No futuro, hashes não devem trafegar pro front, mas para compatibilidade atual mantemos.
+          senha: string // No futuro, hashes não devem trafegar pro front, mas para compatibilidade atual mantemos.
           role: 'standard' | 'master' | string
           created_at: string
         }

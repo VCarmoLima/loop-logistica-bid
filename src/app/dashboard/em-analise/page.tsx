@@ -12,14 +12,14 @@ export default function AnalisePage() {
   useEffect(() => {
     const session = Cookies.get('bid_session')
     if (session) {
-        const userData = JSON.parse(session)
-        if (userData.type !== 'admin') {
-            router.push('/dashboard') // Chuta transportadora para fora
-        } else {
-            setUser(userData)
-        }
+      const userData = JSON.parse(session)
+      if (userData.type !== 'admin') {
+        router.push('/dashboard')
+      } else {
+        setUser(userData)
+      }
     } else {
-        router.push('/') // Sem login
+      router.push('/')
     }
   }, [])
 

@@ -12,15 +12,14 @@ export default function AprovacaoPage() {
   useEffect(() => {
     const session = Cookies.get('bid_session')
     if (session) {
-        const userData = JSON.parse(session)
-        // Segurança Extra: Só deixa renderizar se for ADMIN e MASTER
-        if (userData.type !== 'admin' || userData.role !== 'master') {
-            router.push('/dashboard') 
-        } else {
-            setUser(userData)
-        }
+      const userData = JSON.parse(session)
+      if (userData.type !== 'admin' || userData.role !== 'master') {
+        router.push('/dashboard')
+      } else {
+        setUser(userData)
+      }
     } else {
-        router.push('/') 
+      router.push('/')
     }
   }, [])
 

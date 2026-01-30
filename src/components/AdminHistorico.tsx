@@ -69,7 +69,6 @@ export default function AdminHistorico() {
 
                         return (
                             <div key={bid.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden transition-all shadow-sm">
-                                {/* Resumo Clicável */}
                                 <div
                                     className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50"
                                     onClick={() => setExpandedId(isExpanded ? null : bid.id)}
@@ -103,10 +102,8 @@ export default function AdminHistorico() {
                                     </div>
                                 </div>
 
-                                {/* Detalhes Expandidos */}
                                 {isExpanded && (
                                     <div className="border-t border-gray-100 bg-gray-50 p-6 animate-in slide-in-from-top-2">
-                                        {/* Info Logística */}
                                         <div className="flex gap-6 text-sm text-gray-700 mb-6 font-medium">
                                             <div className="flex items-center gap-2">
                                                 <MapPin size={16} className="text-gray-500" />

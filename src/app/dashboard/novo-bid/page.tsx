@@ -14,7 +14,6 @@ import {
 import { gerarEmailHtml } from '@/lib/email-template'
 
 
-// Tipo para o Pátio
 type Patio = {
     id: string
     nome: string
@@ -33,25 +32,19 @@ export default function NovoBidPage() {
     const [loading, setLoading] = useState(false)
     const [imagemFile, setImagemFile] = useState<File | null>(null)
 
-    // Listas de Pátios vindos do banco
     const [listaPatios, setListaPatios] = useState<Patio[]>([])
 
-    // Controles visuais
     const [isOrigemPatio, setIsOrigemPatio] = useState(false)
     const [isDestinoPatio, setIsDestinoPatio] = useState(false)
 
-    // Controle do Sufixo do ID
     const [usarSufixo, setUsarSufixo] = useState(false)
     const [sufixoId, setSufixoId] = useState('')
 
-    // MODAL DE CONFIRMAÇÃO
     const [showConfirm, setShowConfirm] = useState(false)
 
-    // ESTRATÉGIA (PESOS)
     const [usarEstrategia, setUsarEstrategia] = useState(false)
     const [pesoPreco, setPesoPreco] = useState(70)
 
-    // Função que força a volta para 70/30 se desmarcar
     const handleToggleStrategy = (checked: boolean) => {
         setUsarEstrategia(checked)
         if (!checked) {
@@ -59,7 +52,6 @@ export default function NovoBidPage() {
         }
     }
 
-    // Estilos
     const inputStyle = "w-full p-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-500"
     const checkboxStyle = "rounded border-gray-300 text-red-600 focus:ring-red-500 accent-red-600 w-4 h-4 cursor-pointer"
 
@@ -80,14 +72,12 @@ export default function NovoBidPage() {
         funciona: false,
     })
 
-    // 1. Carregar Pátios e Gerar Código Base
     useEffect(() => {
         const codigo = gerarCodigoBid()
         setFormData(prev => ({ ...prev, codigo_base: codigo }))
         fetchPatios()
     }, [])
 
-    // 2. Lógica de Frotas (Placa)
     useEffect(() => {
         if (Number(formData.quantidade_veiculos) > 1) {
             setFormData(prev => ({ ...prev, placa: 'LOTE / DIVERSAS' }))
@@ -98,7 +88,6 @@ export default function NovoBidPage() {
         }
     }, [formData.quantidade_veiculos])
 
-    // 3. Lógica "Pátio a Pátio"
     useEffect(() => {
         if (formData.tipo_transporte === 'Pátio a Pátio') {
             setIsOrigemPatio(true)
@@ -162,24 +151,20 @@ export default function NovoBidPage() {
         return !!data
     }
 
-    // --- LÓGICA DE CORES DO SLIDER ---
     const getStrategyColors = () => {
         if (pesoPreco >= 45 && pesoPreco <= 55) {
-            // Equilibrado (Amarelo / Amarelo)
             return {
                 priceText: 'text-yellow-600',
                 deadlineText: 'text-yellow-600',
                 sliderAccent: 'accent-yellow-500'
             }
         } else if (pesoPreco > 55) {
-            // Foco Preço (Verde / Amarelo)
             return {
                 priceText: 'text-green-600',
                 deadlineText: 'text-yellow-600',
                 sliderAccent: 'accent-green-600'
             }
         } else {
-            // Foco Prazo (Amarelo / Verde)
             return {
                 priceText: 'text-yellow-600',
                 deadlineText: 'text-green-600',
@@ -262,16 +247,13 @@ export default function NovoBidPage() {
             if (insertError) throw insertError
 
             try {
-                // 1. Busca e-mails de todas as transportadoras
                 const { data: transportadoras } = await supabase
                     .from('transportadoras')
                     .select('email')
 
                 if (transportadoras && transportadoras.length > 0) {
-                    // Filtra nulos e cria array de strings
                     const listaEmails = transportadoras.map(t => t.email).filter(Boolean)
 
-                    // 2. Monta o Conteúdo Interno (O recheio do sanduíche)
                     const conteudoEmail = `
                     <p>Um novo BID foi aberto!</p>
                     <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -282,7 +264,6 @@ export default function NovoBidPage() {
                     <p style="font-size: 13px;">Acesse o painel para visualizar fotos e dar seu lance.</p>
                 `
 
-                    // 3. Gera o HTML Final usando o Template Padrão
                     const htmlFinal = gerarEmailHtml(
                         'Nova Oportunidade Disponível',
                         conteudoEmail,
@@ -290,7 +271,6 @@ export default function NovoBidPage() {
                         'VER DETALHES E DAR LANCE'
                     )
 
-                    // 4. Envia via API (Usando BCC para LGPD)
                     await fetch('/api/send-email', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -332,7 +312,6 @@ export default function NovoBidPage() {
 
             <form onSubmit={handlePreSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
-                {/* Seção 1: Dados do Veículo */}
                 <div className="p-6 border-b border-gray-100">
                     <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
                         <Truck size={16} /> Dados
@@ -340,7 +319,6 @@ export default function NovoBidPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
-                        {/* ID Inteligente */}
                         <div className="md:col-span-4">
                             <div className="flex justify-between mb-1">
                                 <label className="block text-sm font-medium text-gray-700">Código do BID</label>
@@ -378,7 +356,6 @@ export default function NovoBidPage() {
                             </div>
                         </div>
 
-                        {/* Quantidade */}
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Qtd. Veículos</label>
                             <input
@@ -391,7 +368,6 @@ export default function NovoBidPage() {
                             />
                         </div>
 
-                        {/* Placa Inteligente */}
                         <div className="md:col-span-3">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Placa</label>
                             <input
@@ -405,7 +381,6 @@ export default function NovoBidPage() {
                             />
                         </div>
 
-                        {/* Categoria */}
                         <div className="md:col-span-3">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
                             <select name="categoria_veiculo" value={formData.categoria_veiculo} onChange={handleChange} className={inputStyle}>
@@ -419,7 +394,6 @@ export default function NovoBidPage() {
                             </select>
                         </div>
 
-                        {/* Linha 2 */}
                         <div className="md:col-span-6">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Modelo / Versão</label>
                             <input type="text" name="titulo" required value={formData.titulo} onChange={handleChange} placeholder="Ex: SCANIA R450 A 6X2" className={inputStyle} />
@@ -462,14 +436,12 @@ export default function NovoBidPage() {
                     </div>
                 </div>
 
-                {/* Seção 2: Rota Logística */}
                 <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                     <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
                         <MapPin size={16} /> Rota Logística
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                        {/* COLUNA ORIGEM */}
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <label className="block text-sm font-medium text-gray-700">Origem (Coleta)</label>
@@ -520,7 +492,6 @@ export default function NovoBidPage() {
                             />
                         </div>
 
-                        {/* COLUNA DESTINO */}
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <label className="block text-sm font-medium text-gray-700">Destino (Entrega)</label>
@@ -574,14 +545,12 @@ export default function NovoBidPage() {
                     </div>
                 </div>
 
-                {/* Seção 3: Estratégia do Leilão (OPCIONAL) */}
                 <div className="p-6 border-b border-gray-100">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                             <Sliders size={16} /> Estratégia de Homologação
                         </h2>
 
-                        {/* CHECKBOX DE ATIVAÇÃO */}
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                             <input
                                 type="checkbox"
@@ -595,18 +564,15 @@ export default function NovoBidPage() {
                         </label>
                     </div>
 
-                    {/* CONTEÚDO CONDICIONAL */}
                     {usarEstrategia ? (
                         <div className="bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2">
                             <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-0 mb-4">
 
-                                {/* Peso Preço */}
                                 <div className="text-center w-full md:w-1/3 order-2 md:order-1">
                                     <span className={`block text-xs font-bold uppercase mb-1 ${colors.priceText}`}>Peso do Preço</span>
                                     <span className={`text-4xl md:text-3xl font-extrabold ${colors.priceText}`}>{pesoPreco}%</span>
                                 </div>
 
-                                {/* Slider */}
                                 <div className="w-full md:w-1/3 px-2 pb-2 order-1 md:order-2">
                                     <input
                                         type="range"
@@ -624,7 +590,6 @@ export default function NovoBidPage() {
                                     </div>
                                 </div>
 
-                                {/* Peso Prazo */}
                                 <div className="text-center w-full md:w-1/3 order-3 md:order-3">
                                     <span className={`block text-xs font-bold uppercase mb-1 ${colors.deadlineText}`}>Peso do Prazo</span>
                                     <span className={`text-4xl md:text-3xl font-extrabold ${colors.deadlineText}`}>{100 - pesoPreco}%</span>
@@ -641,7 +606,6 @@ export default function NovoBidPage() {
                             </p>
                         </div>
                     ) : (
-                        // FEEDBACK VISUAL QUANDO DESATIVADO (PADRÃO)
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between opacity-75 grayscale hover:grayscale-0 transition-all">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-200 rounded-full text-gray-500">
@@ -656,7 +620,6 @@ export default function NovoBidPage() {
                     )}
                 </div>
 
-                {/* Seção 4: Prazos e Foto */}
                 <div className="p-6">
                     <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
                         <Calendar size={16} /> Encerramento & Mídia
@@ -702,7 +665,6 @@ export default function NovoBidPage() {
                     </div>
                 </div>
 
-                {/* Footer com Botões */}
                 <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                     <button
                         type="button"
@@ -722,13 +684,10 @@ export default function NovoBidPage() {
 
             </form>
 
-            {/* --- MODAL DE DOUBLE CHECK (RESPONSIVO) --- */}
             {showConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    {/* Ajuste de altura e largura máxima */}
                     <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh] border border-gray-200">
 
-                        {/* 1. Cabeçalho (Padding responsivo) */}
                         <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100 flex justify-between items-center bg-white">
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900">Revisão de Publicação</h3>
@@ -746,7 +705,6 @@ export default function NovoBidPage() {
 
                             <div className="divide-y divide-gray-100">
 
-                                {/* Bloco ID e Data (Grid vira coluna no mobile) */}
                                 <div className="px-4 py-4 md:px-6 md:py-4 bg-gray-50/50 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Código do Processo</span>
@@ -760,7 +718,6 @@ export default function NovoBidPage() {
                                     </div>
                                 </div>
 
-                                {/* Bloco Veículo */}
                                 <div className="px-4 py-5 md:px-6">
                                     <div className="flex items-center gap-2 mb-4">
                                         <div className="p-1.5 bg-red-50 text-red-600 rounded">
@@ -769,7 +726,6 @@ export default function NovoBidPage() {
                                         <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">Dados da Carga</h4>
                                     </div>
 
-                                    {/* Grid ajustado: 2 colunas no mobile, 4 no desktop */}
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-4 md:gap-x-6">
                                         <div className="col-span-2">
                                             <span className="text-[10px] font-bold text-gray-400 uppercase block">Modelo / Versão</span>
@@ -787,7 +743,6 @@ export default function NovoBidPage() {
                                             <span className="text-[10px] font-bold text-gray-400 uppercase block">Operação</span>
                                             <span className="text-sm font-medium text-gray-700">{formData.tipo_transporte}</span>
                                         </div>
-                                        {/* Tags */}
                                         <div className="col-span-2 flex flex-wrap gap-2 md:gap-3 mt-1">
                                             <div className="flex items-center gap-1.5 text-xs text-gray-700 font-medium bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">
                                                 <Key size={12} className="text-gray-500" />
@@ -801,7 +756,6 @@ export default function NovoBidPage() {
                                     </div>
                                 </div>
 
-                                {/* Bloco Rota */}
                                 <div className="px-4 py-5 md:px-6">
                                     <div className="flex items-center gap-2 mb-4">
                                         <div className="p-1.5 bg-red-50 text-red-600 rounded">
@@ -811,7 +765,6 @@ export default function NovoBidPage() {
                                     </div>
 
                                     <div className="relative pl-3 border-l-2 border-gray-200 ml-2 space-y-6">
-                                        {/* Origem */}
                                         <div className="relative">
                                             <div className="absolute -left-[19px] top-1 w-3 h-3 bg-white border-2 border-red-600 rounded-full"></div>
                                             <div className="pl-2">
@@ -820,7 +773,6 @@ export default function NovoBidPage() {
                                                 <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{formData.endereco_retirada || 'Endereço pendente'}</p>
                                             </div>
                                         </div>
-                                        {/* Destino */}
                                         <div className="relative">
                                             <div className="absolute -left-[19px] top-1 w-3 h-3 bg-red-600 rounded-full shadow-sm"></div>
                                             <div className="pl-2">
@@ -832,7 +784,6 @@ export default function NovoBidPage() {
                                     </div>
                                 </div>
 
-                                {/* Bloco Estratégia */}
                                 <div className="px-4 py-5 md:px-6 bg-gray-50/30">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
@@ -873,7 +824,6 @@ export default function NovoBidPage() {
                             </div>
                         </div>
 
-                        {/* Footer Actions (Botões empilhados no mobile, linha no desktop) */}
                         <div className="p-4 md:p-5 border-t border-gray-100 bg-gray-50 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                             <button
                                 onClick={() => setShowConfirm(false)}

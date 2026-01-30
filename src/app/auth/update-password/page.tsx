@@ -2,27 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { Montserrat } from 'next/font/google'
 import { Lock, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
 
-// CONFIGURANDO A FONTE DO LOGO (Igual ao Login)
 const logoFont = Montserrat({
     subsets: ['latin'],
     weight: ['600', '800'],
     display: 'swap',
 })
 
-// Inicializa Supabase
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_KEY!
-)
-
 export default function UpdatePasswordPage() {
     const router = useRouter()
 
-    // ESTADOS
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -30,10 +22,7 @@ export default function UpdatePasswordPage() {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
 
-    // ESTADO DO LOGO (Para manter o padrão do Login)
     const [logoError, setLogoError] = useState(false)
-
-    // O Supabase detecta a sessão automaticamente pelo hash da URL vinda do email
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault()

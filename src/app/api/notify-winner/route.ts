@@ -8,11 +8,9 @@ export async function POST(request: Request) {
         const body = await request.json()
         const { winnerLanceId, bidTitle, valorFinal } = body
 
-        // Logs de Debug
         console.log("1. Iniciando envio de Vencedor...")
         console.log("2. Dados:", { winnerLanceId, bidTitle, valorFinal })
 
-        // 1. Busca dados do Lance
         const { data: lanceData, error: lanceError } = await supabase
             .from('lances')
             .select('auth_id, transportadora_nome')
@@ -24,17 +22,13 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Lance não encontrado' }, { status: 404 })
         }
 
-        // --- CORREÇÃO AQUI: VERIFICAÇÃO DE LANCE ANTIGO ---
-        // Se o auth_id for nulo (lance criado antes da atualização), paramos aqui sem erro.
         if (!lanceData.auth_id) {
             console.log("⚠️ Lance antigo detectado (sem auth_id). O e-mail não será enviado, mas o fluxo segue.")
             return NextResponse.json({ message: 'Lance antigo sem vínculo de usuário. E-mail ignorado.' })
         }
-        // --------------------------------------------------
 
         console.log("3. Lance válido. Buscando email do ID:", lanceData.auth_id)
 
-        // 2. Busca e-mail da Transportadora
         const { data: userData, error: userError } = await supabase
             .from('transportadoras')
             .select('email, nome')
@@ -48,7 +42,6 @@ export async function POST(request: Request) {
 
         console.log("4. Destinatário encontrado:", userData.email)
 
-        // 3. Envio de Email
         const conteudo = `
         <p>Parabéns, <strong>${userData.nome}</strong>!</p>
         <p>Sua proposta foi a escolhida e <strong>HOMOLOGADA</strong> pelo nosso time.</p>

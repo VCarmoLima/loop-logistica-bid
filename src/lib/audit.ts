@@ -2,23 +2,22 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
-// Helper para converter imagem URL para Base64 (necessário para o PDF)
 const getDataUrl = (url: string): Promise<string | null> => {
-  return new Promise((resolve) => {
-    if (!url) { resolve(null); return; }
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = url;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL("image/jpeg"));
-    };
-    img.onerror = () => resolve(null);
-  });
+    return new Promise((resolve) => {
+        if (!url) { resolve(null); return; }
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = url;
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx?.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL("image/jpeg"));
+        };
+        img.onerror = () => resolve(null);
+    });
 };
 
 export const downloadCSV = (bid: any, lances: any[]) => {
@@ -41,31 +40,27 @@ export const downloadCSV = (bid: any, lances: any[]) => {
 export const downloadPDF = async (bid: any, lances: any[], vencedor: any) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // --- 1. CABEÇALHO CORPORATIVO ---
-    doc.setFillColor(127, 29, 29); // Vermelho Vinho (Igual ao sistema)
+
+    doc.setFillColor(127, 29, 29);
     doc.rect(0, 0, pageWidth, 24, 'F');
-    
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.text("RELATÓRIO DE AUDITORIA & COMPLIANCE", 14, 16);
-    
+
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.text(`Gerado em: ${new Date().toLocaleString()}`, pageWidth - 14, 16, { align: 'right' });
 
     let y = 35;
 
-    // --- 2. INFO DO PROCESSO & VEÍCULO (Layout Lado a Lado) ---
-    
-    // Coluna da Esquerda (Dados)
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("DADOS DO PROCESSO", 14, y);
     y += 6;
-    
+
     doc.setDrawColor(200);
     doc.line(14, y, pageWidth - 14, y);
     y += 8;
@@ -89,34 +84,30 @@ export const downloadPDF = async (bid: any, lances: any[], vencedor: any) => {
         y += 6;
     });
 
-    // Coluna da Direita (Imagem do Veículo)
-    // Tenta carregar a imagem. Se falhar, deixa em branco.
     if (bid.imagem_url) {
         try {
             const imgData = await getDataUrl(bid.imagem_url);
             if (imgData) {
-                // Desenha moldura da imagem
                 const imgW = 70;
                 const imgH = 50;
                 const imgX = pageWidth - 14 - imgW;
                 const imgY = 42;
-                
+
                 doc.setDrawColor(220);
-                doc.rect(imgX, imgY, imgW, imgH); 
+                doc.rect(imgX, imgY, imgW, imgH);
                 doc.addImage(imgData, 'JPEG', imgX + 1, imgY + 1, imgW - 2, imgH - 2);
-                
+
                 doc.setFontSize(8);
                 doc.setTextColor(100);
-                doc.text("Registro Fotográfico do Lote", imgX + (imgW/2), imgY + imgH + 4, { align: 'center' });
+                doc.text("Registro Fotográfico do Lote", imgX + (imgW / 2), imgY + imgH + 4, { align: 'center' });
             }
         } catch (e) {
             console.error("Erro ao carregar imagem para PDF", e);
         }
     }
 
-    y = Math.max(y, 105); // Garante espaço se a imagem for alta
+    y = Math.max(y, 105);
 
-    // --- 3. CRONOLOGIA DE EVENTOS (TIMELINE) ---
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
@@ -136,29 +127,28 @@ export const downloadPDF = async (bid: any, lances: any[], vencedor: any) => {
     events.forEach((evt) => {
         doc.setDrawColor(150);
         doc.setFillColor(240, 240, 240);
-        doc.circle(16, y - 1, 1.5, 'F'); // Bolinha da timeline
+        doc.circle(16, y - 1, 1.5, 'F');
         doc.setDrawColor(200);
-        doc.line(16, y, 16, y + 8); // Linha vertical
+        doc.line(16, y, 16, y + 8);
 
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
         doc.text(evt.label, 22, y);
-        
+
         doc.setFont("helvetica", "normal");
         doc.text(evt.val || '-', 80, y);
         y += 8;
     });
-    
+
     y += 10;
 
-    // --- 4. DADOS DO VENCEDOR (SE HOUVER) ---
     if (vencedor) {
-        doc.setFillColor(240, 253, 244); // Fundo Verde Claro Bem Suave
+        doc.setFillColor(240, 253, 244);
         doc.rect(14, y, pageWidth - 28, 28, 'F');
-        doc.setDrawColor(22, 163, 74); // Borda Verde
+        doc.setDrawColor(22, 163, 74);
         doc.rect(14, y, pageWidth - 28, 28, 'S');
 
-        doc.setTextColor(21, 128, 61); // Texto Verde Escuro
+        doc.setTextColor(21, 128, 61);
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
         doc.text("VENCEDOR HOMOLOGADO", 20, y + 8);
@@ -168,10 +158,9 @@ export const downloadPDF = async (bid: any, lances: any[], vencedor: any) => {
         doc.text(`Transportadora: ${vencedor.transportadora_nome}`, 20, y + 18);
         doc.text(`Valor Final: ${formatCurrency(vencedor.valor)}`, 100, y + 18);
         doc.text(`Prazo: ${vencedor.prazo_dias} dias`, 150, y + 18);
-        
+
         y += 35;
-        
-        // Justificativa
+
         if (bid.justificativa_selecao) {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10);
@@ -179,13 +168,12 @@ export const downloadPDF = async (bid: any, lances: any[], vencedor: any) => {
             y += 5;
             doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
-            // Split text para quebrar linha
             const splitJustif = doc.splitTextToSize(bid.justificativa_selecao, pageWidth - 28);
             doc.text(splitJustif, 14, y);
             y += (splitJustif.length * 5) + 10;
         }
     } else {
-        doc.setFillColor(254, 242, 242); // Vermelho Claro
+        doc.setFillColor(254, 242, 242);
         doc.rect(14, y, pageWidth - 28, 15, 'F');
         doc.setTextColor(153, 27, 27);
         doc.setFont("helvetica", "bold");
@@ -193,7 +181,6 @@ export const downloadPDF = async (bid: any, lances: any[], vencedor: any) => {
         y += 25;
     }
 
-    // --- 5. TABELA DE LANCES (LIVRO DE OFERTAS) ---
     doc.setTextColor(0);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
@@ -214,27 +201,26 @@ export const downloadPDF = async (bid: any, lances: any[], vencedor: any) => {
         head: [['Carimbo de Data/Hora', 'Transportadora', 'Valor Ofertado', 'Prazo']],
         body: tableRows,
         theme: 'grid',
-        headStyles: { 
-            fillColor: [64, 64, 64], 
-            textColor: 255, 
-            fontStyle: 'bold' 
+        headStyles: {
+            fillColor: [64, 64, 64],
+            textColor: 255,
+            fontStyle: 'bold'
         },
-        alternateRowStyles: { 
-            fillColor: [245, 245, 245] 
+        alternateRowStyles: {
+            fillColor: [245, 245, 245]
         },
-        styles: { 
-            fontSize: 9, 
-            cellPadding: 3 
+        styles: {
+            fontSize: 9,
+            cellPadding: 3
         },
         columnStyles: {
-            2: { fontStyle: 'bold', halign: 'right' }, // Valor
-            3: { halign: 'center' } // Prazo
+            2: { fontStyle: 'bold', halign: 'right' },
+            3: { halign: 'center' }
         }
     });
 
-    // --- RODAPÉ EM TODAS AS PÁGINAS ---
     const pageCount = (doc as any).internal.getNumberOfPages();
-    for(let i = 1; i <= pageCount; i++) {
+    for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(150);
