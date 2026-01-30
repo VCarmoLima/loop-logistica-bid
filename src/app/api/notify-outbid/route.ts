@@ -1,20 +1,28 @@
 import { NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 import nodemailer from 'nodemailer'
 import { gerarEmailHtml } from '@/lib/email-template'
-import { supabase } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
-    const { oldWinnerAuthId, bidTitle, newPrice, bidId } = await request.json()
+    const { oldWinnerAuthId, bidTitle, newPrice } = await request.json()
 
-    // 2. Busca dados da transportadora superada
+    // Validação básica
+    if (!oldWinnerAuthId) {
+      return NextResponse.json({ message: 'ID do usuário anterior não fornecido.' }, { status: 400 })
+    }
+
+    // 2. Busca dados da transportadora superada (busca pelo auth_id)
     const { data: userData, error } = await supabase
       .from('transportadoras')
       .select('email, nome')
       .eq('auth_id', oldWinnerAuthId)
       .single()
 
-    if (error || !userData) return NextResponse.json({ message: 'Transportadora não encontrada.' }, { status: 404 })
+    if (error || !userData) {
+      console.error("Erro ao buscar transportadora superada:", error)
+      return NextResponse.json({ message: 'Transportadora não encontrada.' }, { status: 404 })
+    }
 
     // 3. Monta o Conteúdo Visual
     const conteudo = `
@@ -22,14 +30,14 @@ export async function POST(request: Request) {
         <p>Outra transportadora acabou de enviar uma oferta mais competitiva para a carga abaixo:</p>
         
         <div style="background-color: #fef2f2; border: 1px solid #fee2e2; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0; color: #991b1b; font-size: 12px; font-weight: bold; text-transform: uppercase;">Veículo / Carga</p>
-            <p style="margin: 5px 0 15px 0; font-size: 16px; font-weight: bold; color: #111;">${bidTitle}</p>
+            <p style="margin: 0; color: #991b1b; font-size: 11px; font-weight: bold; text-transform: uppercase;">Veículo / Carga</p>
+            <p style="margin: 2px 0 10px 0; font-size: 16px; font-weight: bold; color: #111;">${bidTitle}</p>
             
-            <p style="margin: 0; color: #991b1b; font-size: 12px; font-weight: bold; text-transform: uppercase;">Novo Melhor Preço</p>
-            <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: 800; color: #dc2626;">${newPrice}</p>
+            <p style="margin: 0; color: #991b1b; font-size: 11px; font-weight: bold; text-transform: uppercase;">Novo Melhor Preço</p>
+            <p style="margin: 2px 0 0 0; font-size: 20px; font-weight: 800; color: #dc2626;">${newPrice}</p>
         </div>
 
-        <p>Se você não cobrir este lance, perderá esta oportunidade.</p>
+        <p style="font-size: 13px;">Se você não cobrir este lance agora, perderá a oportunidade.</p>
     `
 
     // 4. Gera HTML Final
