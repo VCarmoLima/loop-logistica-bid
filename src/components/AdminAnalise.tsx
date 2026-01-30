@@ -1,14 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { CheckCircle, AlertCircle, Trophy, Clock, DollarSign, FileText, RefreshCcw, XOctagon } from 'lucide-react'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-)
 
 export default function AdminAnalise({ user }: { user: any }) {
   const [bids, setBids] = useState<any[]>([])

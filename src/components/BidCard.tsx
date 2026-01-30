@@ -1,17 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { 
     MapPin, Clock, Truck, TrendingDown, CheckCircle, XCircle, 
     DollarSign, Zap, Eye, AlertTriangle, X, Key, Power, Layers, Tag, Target
 } from 'lucide-react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-)
 
 interface BidCardProps {
   bid: any
