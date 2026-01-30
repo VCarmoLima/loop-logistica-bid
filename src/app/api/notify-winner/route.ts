@@ -1,64 +1,55 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import nodemailer from 'nodemailer'
 import { gerarEmailHtml } from '@/lib/email-template'
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json()
-    const { winnerLanceId, bidTitle, valorFinal } = body
+    try {
+        const body = await request.json()
+        const { winnerLanceId, bidTitle, valorFinal } = body
 
-    // Logs de Debug
-    console.log("1. Iniciando envio de Vencedor...")
-    console.log("2. Dados:", { winnerLanceId, bidTitle, valorFinal })
+        // Logs de Debug
+        console.log("1. Iniciando envio de Vencedor...")
+        console.log("2. Dados:", { winnerLanceId, bidTitle, valorFinal })
 
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-        throw new Error("FATAL: SUPABASE_SERVICE_ROLE_KEY não carregada.")
-    }
+        // 1. Busca dados do Lance
+        const { data: lanceData, error: lanceError } = await supabase
+            .from('lances')
+            .select('auth_id, transportadora_nome')
+            .eq('id', winnerLanceId)
+            .single()
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+        if (lanceError || !lanceData) {
+            console.error("Erro ao buscar lance:", lanceError)
+            return NextResponse.json({ message: 'Lance não encontrado' }, { status: 404 })
+        }
 
-    // 1. Busca dados do Lance
-    const { data: lanceData, error: lanceError } = await supabaseAdmin
-        .from('lances')
-        .select('auth_id, transportadora_nome')
-        .eq('id', winnerLanceId)
-        .single()
+        // --- CORREÇÃO AQUI: VERIFICAÇÃO DE LANCE ANTIGO ---
+        // Se o auth_id for nulo (lance criado antes da atualização), paramos aqui sem erro.
+        if (!lanceData.auth_id) {
+            console.log("⚠️ Lance antigo detectado (sem auth_id). O e-mail não será enviado, mas o fluxo segue.")
+            return NextResponse.json({ message: 'Lance antigo sem vínculo de usuário. E-mail ignorado.' })
+        }
+        // --------------------------------------------------
 
-    if (lanceError || !lanceData) {
-        console.error("Erro ao buscar lance:", lanceError)
-        return NextResponse.json({ message: 'Lance não encontrado' }, { status: 404 })
-    }
+        console.log("3. Lance válido. Buscando email do ID:", lanceData.auth_id)
 
-    // --- CORREÇÃO AQUI: VERIFICAÇÃO DE LANCE ANTIGO ---
-    // Se o auth_id for nulo (lance criado antes da atualização), paramos aqui sem erro.
-    if (!lanceData.auth_id) {
-        console.log("⚠️ Lance antigo detectado (sem auth_id). O e-mail não será enviado, mas o fluxo segue.")
-        return NextResponse.json({ message: 'Lance antigo sem vínculo de usuário. E-mail ignorado.' })
-    }
-    // --------------------------------------------------
+        // 2. Busca e-mail da Transportadora
+        const { data: userData, error: userError } = await supabase
+            .from('transportadoras')
+            .select('email, nome')
+            .eq('auth_id', lanceData.auth_id)
+            .single()
 
-    console.log("3. Lance válido. Buscando email do ID:", lanceData.auth_id)
+        if (userError || !userData) {
+            console.error("Erro ao buscar Transportadora:", userError)
+            return NextResponse.json({ message: 'Transportadora não encontrada' }, { status: 404 })
+        }
 
-    // 2. Busca e-mail da Transportadora
-    const { data: userData, error: userError } = await supabaseAdmin
-        .from('transportadoras')
-        .select('email, nome')
-        .eq('auth_id', lanceData.auth_id)
-        .single()
+        console.log("4. Destinatário encontrado:", userData.email)
 
-    if (userError || !userData) {
-        console.error("Erro ao buscar Transportadora:", userError)
-        return NextResponse.json({ message: 'Transportadora não encontrada' }, { status: 404 })
-    }
-
-    console.log("4. Destinatário encontrado:", userData.email)
-
-    // 3. Envio de Email
-    const conteudo = `
+        // 3. Envio de Email
+        const conteudo = `
         <p>Parabéns, <strong>${userData.nome}</strong>!</p>
         <p>Sua proposta foi a escolhida e <strong>HOMOLOGADA</strong> pelo nosso time.</p>
         <div style="background-color: #f0fdf4; border: 1px solid #dcfce7; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -70,26 +61,26 @@ export async function POST(request: Request) {
         <p style="font-size: 13px;">Aguarde contato operacional.</p>
     `
 
-    const htmlFinal = gerarEmailHtml('🏆 PARABÉNS: Você Venceu!', conteudo, `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`, 'ACESSAR PAINEL')
+        const htmlFinal = gerarEmailHtml('🏆 PARABÉNS: Você Venceu!', conteudo, `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`, 'ACESSAR PAINEL')
 
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-    })
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+        })
 
-    await transporter.sendMail({
-        from: `"Sistema BID Logística" <${process.env.GMAIL_USER}>`,
-        to: userData.email,
-        cc: process.env.LOOP_USER,
-        subject: `🏆 BID Vencido: ${bidTitle}`,
-        html: htmlFinal
-    })
+        await transporter.sendMail({
+            from: `"Sistema BID Logística" <${process.env.GMAIL_USER}>`,
+            to: userData.email,
+            cc: process.env.LOOP_USER,
+            subject: `🏆 BID Vencido: ${bidTitle}`,
+            html: htmlFinal
+        })
 
-    console.log("✅ E-mail enviado com sucesso!")
-    return NextResponse.json({ message: 'Vencedor notificado com sucesso!' })
+        console.log("✅ E-mail enviado com sucesso!")
+        return NextResponse.json({ message: 'Vencedor notificado com sucesso!' })
 
-  } catch (error: any) {
-    console.error('FATAL API ERROR:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    } catch (error: any) {
+        console.error('FATAL API ERROR:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 }

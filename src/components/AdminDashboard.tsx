@@ -1,14 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Clock, StopCircle, TrendingDown, Package, MapPin } from 'lucide-react'
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_KEY!
-)
 
 export default function AdminDashboard({ user }: { user: any }) {
     const [bids, setBids] = useState<any[]>([])
@@ -69,7 +64,7 @@ export default function AdminDashboard({ user }: { user: any }) {
 
     return (
         <div className="pb-20 md:pb-0"> {/* Espaço extra no mobile para não colar no fundo */}
-            
+
             <div className="mb-6 md:mb-8">
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900">Painel de Monitoramento</h1>
                 <p className="text-gray-500 text-xs md:text-sm">Acompanhamento em tempo real das cotações ativas.</p>
@@ -96,10 +91,10 @@ export default function AdminDashboard({ user }: { user: any }) {
                         return (
                             <div key={bid.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                                 <div className="p-4 md:p-6">
-                                    
+
                                     {/* RESPONSIVIDADE: flex-col no mobile, flex-row no desktop */}
                                     <div className="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
-                                        
+
                                         <div className="flex gap-4 w-full md:w-auto">
                                             {/* Imagem */}
                                             <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
@@ -120,7 +115,7 @@ export default function AdminDashboard({ user }: { user: any }) {
                                                         <Clock size={12} /> Encerra: {formatDate(bid.prazo_limite)}
                                                     </span>
                                                 </div>
-                                                
+
                                                 <h3 className="text-base md:text-lg font-bold text-gray-900 leading-tight mb-1">{bid.titulo}</h3>
                                                 <p className="text-xs md:text-sm text-gray-500 mb-2 truncate">{bid.tipo_transporte} • {bid.categoria_veiculo}</p>
 

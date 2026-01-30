@@ -1,24 +1,18 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import { gerarEmailHtml } from '@/lib/email-template'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
     const { oldWinnerAuthId, bidTitle, newPrice, bidId } = await request.json()
 
-    // 1. Supabase Admin (para buscar o e-mail do concorrente via ID oculto)
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY! // Necessário adicionar no .env.local
-    )
-
     // 2. Busca dados da transportadora superada
-    const { data: userData, error } = await supabaseAdmin
-        .from('transportadoras')
-        .select('email, nome')
-        .eq('auth_id', oldWinnerAuthId)
-        .single()
+    const { data: userData, error } = await supabase
+      .from('transportadoras')
+      .select('email, nome')
+      .eq('auth_id', oldWinnerAuthId)
+      .single()
 
     if (error || !userData) return NextResponse.json({ message: 'Transportadora não encontrada.' }, { status: 404 })
 
@@ -40,10 +34,10 @@ export async function POST(request: Request) {
 
     // 4. Gera HTML Final
     const htmlFinal = gerarEmailHtml(
-        '⚠️ Atenção: Você foi superado!', 
-        conteudo,
-        `${process.env.NEXT_PUBLIC_APP_URL || 'https://logistica-bid.vercel.app'}/dashboard`,
-        'COBRIR OFERTA AGORA'
+      '⚠️ Atenção: Você foi superado!',
+      conteudo,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://logistica-bid.vercel.app'}/dashboard`,
+      'COBRIR OFERTA AGORA'
     )
 
     // 5. Configura Envio
