@@ -138,6 +138,6 @@ Este repositório contém uma versão demonstrativa. Logos e dados reais de empr
 
 ## Licença
 
-Este projeto está licenciado sob a licença MIT. Consulte o arquivo LICENSE para mais detalhes.
+Copyright © 2026 Vinicius do Carmo Lima. Todos os direitos reservados. 
 
-Direitos reservados a [VCarmoLima](https://www.linkedin.com/in/viniciusdocarmolima/).
+O uso, cópia ou distribuição deste software sem autorização expressa é **proibido**.
