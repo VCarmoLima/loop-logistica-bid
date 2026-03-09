@@ -31,16 +31,13 @@ export default function AdminAprovacao({ user }: { user: any }) {
         }
     }
 
-    const calcularRankings = (lances: any[]) => {
+    const ordenarLances = (lances: any[], bid: any) => {
         if (!lances || lances.length === 0) return []
-        const minPreco = Math.min(...lances.map(l => l.valor))
-        const minPrazo = Math.min(...lances.map(l => l.prazo_dias))
-
-        return lances.map(l => {
-            const scorePreco = (minPreco / l.valor) * 70
-            const scorePrazo = (minPrazo / l.prazo_dias) * 30
-            return { ...l, score: scorePreco + scorePrazo }
-        }).sort((a, b) => b.score - a.score)
+        const foco = bid.foco || 'PRECO'
+        return [...lances].sort((a, b) => {
+            if (foco === 'PRAZO') return a.prazo_dias !== b.prazo_dias ? a.prazo_dias - b.prazo_dias : a.valor - b.valor;
+            return a.valor !== b.valor ? a.valor - b.valor : a.prazo_dias - b.prazo_dias;
+        })
     }
 
     const handleAprovar = async (bidId: string) => {
@@ -144,7 +141,7 @@ export default function AdminAprovacao({ user }: { user: any }) {
                 <div className="space-y-8">
                     {bids.map((bid) => {
                         const vencedor = bid.lances.find((l: any) => l.id === bid.lance_vencedor_id)
-                        const rankings = calcularRankings(bid.lances)
+                        const rankings = ordenarLances(bid.lances, bid)
 
                         return (
                             <div key={bid.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden border-l-4 border-l-red-900">
@@ -205,15 +202,6 @@ export default function AdminAprovacao({ user }: { user: any }) {
                                                 </div>
                                             </div>
 
-                                            <div className="bg-white p-3 rounded border border-gray-200">
-                                                <div className="text-xs font-bold text-gray-500 mb-1 flex items-center gap-1"><Trophy size={12} /> Melhor Score</div>
-                                                <div className="text-sm font-bold text-gray-900">
-                                                    {rankings.sort((a, b) => b.score - a.score)[0]?.transportadora_nome}
-                                                </div>
-                                                <div className="text-xs text-gray-900 font-bold">
-                                                    {rankings.sort((a, b) => b.score - a.score)[0]?.score.toFixed(1)} pts
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
 

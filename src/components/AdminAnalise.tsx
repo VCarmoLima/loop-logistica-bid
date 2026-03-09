@@ -38,20 +38,13 @@ export default function AdminAnalise({ user }: { user: any }) {
         }
     }
 
-    const calcularRankings = (lances: any[], bid: any) => {
+    const ordenarLances = (lances: any[], bid: any) => {
         if (!lances || lances.length === 0) return []
-
-        const pesoPreco = bid.peso_preco || 70
-        const pesoPrazo = bid.peso_prazo || 30
-
-        const minPreco = Math.min(...lances.map(l => l.valor))
-        const minPrazo = Math.min(...lances.map(l => l.prazo_dias))
-
-        return lances.map(l => {
-            const scorePreco = (minPreco / l.valor) * pesoPreco
-            const scorePrazo = (minPrazo / l.prazo_dias) * pesoPrazo
-            return { ...l, score: scorePreco + scorePrazo }
-        }).sort((a, b) => b.score - a.score)
+        const foco = bid.foco || 'PRECO'
+        return [...lances].sort((a, b) => {
+            if (foco === 'PRAZO') return a.prazo_dias !== b.prazo_dias ? a.prazo_dias - b.prazo_dias : a.valor - b.valor;
+            return a.valor !== b.valor ? a.valor - b.valor : a.prazo_dias - b.prazo_dias;
+        })
     }
 
     const handleSelecionarVencedor = async (bidId: string) => {
@@ -152,7 +145,7 @@ export default function AdminAnalise({ user }: { user: any }) {
             ) : (
                 <div className="space-y-8">
                     {bids.map((bid) => {
-                        const lancesCalculados = calcularRankings(bid.lances, bid)
+                        const lancesCalculados = ordenarLances(bid.lances, bid)
                         const totalLances = lancesCalculados.length
 
                         const pPreco = bid.peso_preco || 70
@@ -307,7 +300,7 @@ export default function AdminAnalise({ user }: { user: any }) {
                                                             <option value="">-- Escolha a Transportadora --</option>
                                                             {lancesCalculados.map(l => (
                                                                 <option key={l.id} value={l.id}>
-                                                                    {l.transportadora_nome} — {formatCurrency(l.valor)} — Score: {l.score.toFixed(1)}
+                                                                    {l.transportadora_nome} — {formatCurrency(l.valor)}
                                                                 </option>
                                                             ))}
                                                         </select>

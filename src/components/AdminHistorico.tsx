@@ -33,16 +33,13 @@ export default function AdminHistorico() {
         }
     }
 
-    const calcularResultados = (lances: any[]) => {
+    const ordenarLances = (lances: any[], bid: any) => {
         if (!lances || lances.length === 0) return []
-        const minPreco = Math.min(...lances.map(l => l.valor))
-        const minPrazo = Math.min(...lances.map(l => l.prazo_dias))
-
-        return lances.map(l => {
-            const scorePreco = (minPreco / l.valor) * 70
-            const scorePrazo = (minPrazo / l.prazo_dias) * 30
-            return { ...l, score: scorePreco + scorePrazo }
-        }).sort((a, b) => b.score - a.score)
+        const foco = bid.foco || 'PRECO'
+        return [...lances].sort((a, b) => {
+            if (foco === 'PRAZO') return a.prazo_dias !== b.prazo_dias ? a.prazo_dias - b.prazo_dias : a.valor - b.valor;
+            return a.valor !== b.valor ? a.valor - b.valor : a.prazo_dias - b.prazo_dias;
+        })
     }
 
     if (loading) return <div className="p-8 text-center text-gray-900 font-medium">Carregando histórico...</div>
@@ -63,7 +60,7 @@ export default function AdminHistorico() {
             ) : (
                 <div className="space-y-4">
                     {bids.map((bid) => {
-                        const resultados = calcularResultados(bid.lances)
+                        const resultados = ordenarLances(bid.lances, bid)
                         const vencedor = bid.lances.find((l: any) => l.id === bid.lance_vencedor_id)
                         const isExpanded = expandedId === bid.id
 
@@ -124,7 +121,6 @@ export default function AdminHistorico() {
                                                         <th className="px-4 py-3">Transportadora</th>
                                                         <th className="px-4 py-3 text-right">Valor</th>
                                                         <th className="px-4 py-3 text-center">Prazo</th>
-                                                        <th className="px-4 py-3 text-center">Score</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">
@@ -137,7 +133,6 @@ export default function AdminHistorico() {
                                                             </td>
                                                             <td className="px-4 py-3 text-right font-medium text-gray-900">{formatCurrency(l.valor)}</td>
                                                             <td className="px-4 py-3 text-center text-gray-900">{l.prazo_dias} dias</td>
-                                                            <td className="px-4 py-3 text-center font-bold text-gray-900">{l.score.toFixed(1)}</td>
                                                         </tr>
                                                     ))}
                                                     {resultados.length === 0 && (

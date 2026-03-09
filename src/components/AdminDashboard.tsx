@@ -84,8 +84,13 @@ export default function AdminDashboard({ user }: { user: any }) {
                 <div className="grid gap-4 md:gap-6">
                     {bids.map((bid) => {
                         const totalLances = bid.lances?.length || 0
-                        const melhorPreco = totalLances > 0 ? Math.min(...bid.lances.map((l: any) => l.valor)) : null
-                        const lider = totalLances > 0 ? bid.lances.find((l: any) => l.valor === melhorPreco)?.transportadora_nome : '---'
+                        const foco = bid.foco || 'PRECO'
+                        const lancesOrdenados = bid.lances?.length > 0 ? [...bid.lances].sort((a, b) => {
+                            if (foco === 'PRAZO') return a.prazo_dias !== b.prazo_dias ? a.prazo_dias - b.prazo_dias : a.valor - b.valor;
+                            return a.valor !== b.valor ? a.valor - b.valor : a.prazo_dias - b.prazo_dias;
+                        }) : []
+                        const lider = lancesOrdenados.length > 0 ? lancesOrdenados[0].transportadora_nome : '---'
+                        const melhorPreco = lancesOrdenados.length > 0 ? lancesOrdenados[0].valor : null
 
                         return (
                             <div key={bid.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
