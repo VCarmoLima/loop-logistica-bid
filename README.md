@@ -4,7 +4,6 @@
 ![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-cyan)
-![License](https://img.shields.io/badge/License-MIT-yellow)
 
 > **Plataforma Enterprise de Leilão Reverso para Logística.** > Centralize cotações, garanta compliance na escolha de transportadoras e audite todo o processo em tempo real.
 
@@ -24,12 +23,13 @@ _Painel amigável com funções de criação, análise, homologação e históri
 
 ## Sobre o Projeto
 
-O **Sistem de BID Logístico** moderniza o processo de contratação de fretes (Spot e Dedicados), substituindo e-mails e WhatsApp por um ambiente de **Leilão Reverso** seguro e transparente.
+O **Sistema de BID Logístico** moderniza o processo de contratação de fretes (Spot e Dedicados), substituindo e-mails e WhatsApp por um ambiente de **Leilão Reverso** seguro e transparente.
 
 ### Principais Diferenciais:
 * **Realtime Bidding:** O mural atualiza instantaneamente quando um concorrente dá um lance, sem precisar recarregar a página (Supabase Realtime).
 * **Segurança de Dados (RLS):** Implementação de *Row Level Security* no banco de dados. Uma transportadora nunca vê os dados da outra, e hackers não conseguem alterar dados sensíveis.
-* **Score Inteligente:** Algoritmo de decisão que pondera **Preço (70%)** e **Prazo (30%)** para sugerir o melhor custo-benefício.
+* **Inteligência Logística e Roteirização:** Integração com a API do *LocationIQ* para calcular a distância (km) da rota automaticamente, sugerindo um SLA (prazo em dias) com base em uma matriz paramétrica.
+* **Gestão de Regras de Negócio:** O sistema permite definir o Foco da cotação (Menor Preço ou Menor Prazo) e aplica regras comportamentais ao Transportador (Prazo Travado, Teto Máximo ou Prazo Livre).
 * **Auditoria Automática:** Geração de PDF oficial ("Compliance Report") ao final de cada processo, contendo a timeline completa e o "Livro de Ofertas".
 * **Gamificação:** Feedback visual imediato ("Você é o Líder" vs "Oferta Superada") e alertas de competitividade para lances ruins.
 
@@ -42,6 +42,7 @@ O projeto foi migrado de uma arquitetura legada (Python) para uma stack moderna 
 * **Frontend:** [Next.js 14](https://nextjs.org/) (App Router, Server Components).
 * **Estilização:** [Tailwind CSS](https://tailwindcss.com/) + [Lucide Icons](https://lucide.dev/).
 * **Backend & Database:** [Supabase](https://supabase.com/) (PostgreSQL).
+* **Geolocalização & Mapas:** API LocationIQ (Geocoding & Matrix Routing).
 * **Autenticação:** Supabase Auth (Email/Password).
 * **Infraestrutura:** Vercel (Frontend) + Supabase Cloud (Backend).
 * **PDF Generation:** `jspdf` + `jspdf-autotable` (Client-side generation).
@@ -103,8 +104,12 @@ Crie um arquivo .env.local na raiz do projeto e adicione suas chaves do Supabase
 ```bash
 NEXT_PUBLIC_SUPABASE_URL="sua_url_do_supabase"
 NEXT_PUBLIC_SUPABASE_KEY="sua_chave_anon_publica"
-EMAIL_USER="seu_email_para_envio@gmail.com"
-EMAIL_PASS="sua_senha_de_app_gmail"
+SUPABASE_SERVICE_ROLE_KEY="sua_chave_secreta_banco"
+GMAIL_USER="seu_email_para_envio@gmail.com"
+GMAIL_PASS="sua_senha_de_app_gmail"
+ADMIN_EMAIL="email_do_admin_recebedor@dominio.com"
+API_KEY_LOCATION_IQ="sua_chave_da_api_de_rotas"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 ### 4. Execute o projeto
 ```bash
