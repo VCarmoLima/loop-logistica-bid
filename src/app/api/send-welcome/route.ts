@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const { email, nome, senhaTemporaria, tipo } = await request.json()
 
     const titulo = tipo === 'admin' ? 'Bem-vindo ao Time!' : 'Bem-vindo Parceiro!'
-    
+
     const conteudo = `
         <p>Olá <strong>${nome}</strong>,</p>
         <p>Seu cadastro no <strong>Sistema de BIDs Logísticos</strong> foi criado com sucesso.</p>
@@ -22,22 +22,22 @@ export async function POST(request: Request) {
     `
 
     const htmlFinal = gerarEmailHtml(
-        titulo,
-        conteudo,
-        `${process.env.NEXT_PUBLIC_APP_URL || 'https://logistica-bid.vercel.app'}/`,
-        'ACESSAR MINHA CONTA'
+      titulo,
+      conteudo,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+      'ACESSAR MINHA CONTA'
     )
 
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+      service: 'gmail',
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
     })
 
     await transporter.sendMail({
-        from: `"Sistema BID Logístico" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject: `Suas credenciais de acesso`,
-        html: htmlFinal
+      from: `"Sistema BID Logístico" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: `Suas credenciais de acesso`,
+      html: htmlFinal
     })
 
     return NextResponse.json({ message: 'Boas-vindas enviada.' })

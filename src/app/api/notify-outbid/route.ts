@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const htmlFinal = gerarEmailHtml(
       '⚠️ Atenção: Você foi superado!',
       conteudo,
-      `${process.env.NEXT_PUBLIC_APP_URL || 'https://logistica-bid.vercel.app'}/dashboard`,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
       'COBRIR OFERTA AGORA'
     )
 

@@ -41,7 +41,6 @@ export default function UpdatePasswordPage() {
         setMessage(null)
 
         try {
-            // Atualiza a senha do usuário já autenticado pelo link mágico
             const { error } = await supabase.auth.updateUser({
                 password: password
             })
@@ -50,7 +49,6 @@ export default function UpdatePasswordPage() {
 
             setMessage({ type: 'success', text: 'Senha atualizada com sucesso!' })
 
-            // Redireciona após 2 segundos
             setTimeout(() => {
                 router.push('/')
             }, 2000)
@@ -66,12 +64,10 @@ export default function UpdatePasswordPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
             <div className="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
 
-                {/* Barra de Topo (Identidade Visual) */}
                 <div className="h-2 w-full bg-gradient-to-r from-red-600 to-red-800" />
 
                 <div className="p-8">
 
-                    {/* CABEÇALHO (Logo Inteligente) */}
                     <div className="flex flex-col items-center justify-center mb-8 select-none">
                         {!logoError ? (
                             <>
@@ -101,7 +97,6 @@ export default function UpdatePasswordPage() {
                         )}
                     </div>
 
-                    {/* MENSAGENS DE FEEDBACK */}
                     {message && (
                         <div className={`mb-6 p-3 rounded-md flex items-center gap-2 text-sm border animate-in fade-in slide-in-from-top-2
               ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}
@@ -163,7 +158,6 @@ export default function UpdatePasswordPage() {
 
                     </form>
 
-                    {/* RODAPÉ MANTIDO */}
                     <div className="mt-8 text-center border-t border-gray-100 pt-4">
                         <p className="text-xs text-gray-400">
                             © {new Date().getFullYear()} VCarmoLima — Todos os direitos reservados.
